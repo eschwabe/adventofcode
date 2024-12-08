@@ -1,33 +1,60 @@
 import * as fs from 'fs';
 
-class Student {
-    fullName: string;
-    constructor(
-        public firstName: string,
-        public middleInitial: string,
-        public lastName: string
-    ) {
-        this.fullName = firstName + " " + middleInitial + " " + lastName;
-    }
-}
+function day_1_data_parser(data: string) {
+    const list1: number[] = [];
+    const list2: number[] = [];
 
-interface Person {
-    firstName: string;
-    lastName: string;
+    data.split('\n').forEach(line => {
+        const numbers = line.split(/\s+/).map(Number);
+        if (numbers.length > 0) {
+            list1.push(numbers[0]);
+            if (numbers.length > 1) {
+                list2.push(numbers[1]);
+            }
+        }
+    });
+
+    return { list1, list2 };
 }
 
 function day_1_1(data: string) {
-    const [list1, list2] = data.split('\n').map(line => line.split(' ').map(Number));
+
+    const { list1, list2 } = day_1_data_parser(data);
 
     list1.sort((a, b) => a - b);
     list2.sort((a, b) => a - b);
 
     let sum = 0;
+
     for (let i = 0; i < Math.min(list1.length, list2.length); i++) {
         sum += Math.abs(list1[i] - list2[i]);
     }
 
-    console.log(sum);
+    console.info("Day 1.1: " + sum);
+}
+
+function day_1_2(data: string) {
+    const { list1, list2 } = day_1_data_parser(data);
+
+    list1.sort((a, b) => a - b);
+    list2.sort((a, b) => a - b);
+
+    let i1 = 0;
+    let i2 = 0;
+    let similarity = 0;
+
+    while (i1 < list1.length && i2 < list2.length) {
+        if (list1[i1] === list2[i2]) {
+            similarity += list1[i1];
+            i2++;
+        } else if (list1[i1] < list2[i2]) {
+            i1++;
+        } else {
+            i2++;
+        }
+    }
+
+    console.info("Day 1.2: " + similarity);
 }
 
 function main() {
@@ -55,6 +82,9 @@ function main() {
         switch (functionSelector) {
             case '1.1':
                 result = day_1_1(data);
+                break;
+            case '1.2':
+                result = day_1_2(data);
                 break;
             default:
                 console.error("Unknown function selector:", functionSelector);
