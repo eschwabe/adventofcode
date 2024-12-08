@@ -1,5 +1,83 @@
 import * as fs from 'fs';
 
+function day_2_data_parser(data: string) {
+    const reports: number[][] = [];
+
+    data.split('\n').forEach(line => {
+        const numbers = line.split(/\s+/).map(Number);
+        reports.push(numbers);
+    });
+
+    return reports;
+}
+
+function day_2_check_report(report: number[]): number {
+
+    let descend = false;
+    let ascend = false;
+
+    for (let i = 0; i < report.length-1; i++) {
+        if (report[i] < report[i+1]) {
+            ascend = true;
+        } else if (report[i] > report[i+1]) {
+            descend = true;
+        }
+
+        if (descend && ascend) {
+            return i;
+        }
+
+        let diff = Math.abs(report[i] - report[i+1]);
+        if (diff < 1 || diff > 3) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+function day_2_1(data: string) {
+
+    const reports = day_2_data_parser(data);
+    let safe: number = 0;
+
+    for (const report of reports) {
+        if (day_2_check_report(report) === -1) {
+            safe += 1;
+        }
+    }
+
+    return safe;
+}
+
+function day_2_2(data: string) {
+
+    const reports = day_2_data_parser(data);
+    let safe: number = 0;
+
+    for (const report of reports) {
+        let result = day_2_check_report(report);
+
+        // brute force if the report is not safe
+        if (result >= 0) {
+            for (let i = 0; i < report.length; i++) {
+                const reportTest = report.slice();
+                reportTest.splice(i, 1);
+                result = day_2_check_report(reportTest);
+                if (result === -1) {
+                    break;
+                }
+            }
+        }
+
+        if (result === -1) {
+            safe += 1;
+        }
+    }
+
+    return safe;
+}
+
 function day_1_data_parser(data: string) {
     const list1: number[] = [];
     const list2: number[] = [];
@@ -30,7 +108,7 @@ function day_1_1(data: string) {
         sum += Math.abs(list1[i] - list2[i]);
     }
 
-    console.info("Day 1.1: " + sum);
+    return sum;
 }
 
 function day_1_2(data: string) {
@@ -54,7 +132,7 @@ function day_1_2(data: string) {
         }
     }
 
-    console.info("Day 1.2: " + similarity);
+    return similarity;
 }
 
 function main() {
@@ -86,12 +164,18 @@ function main() {
             case '1.2':
                 result = day_1_2(data);
                 break;
+            case '2.1':
+                result = day_2_1(data);
+                break;
+            case '2.2':
+                result = day_2_2(data);
+                break;
             default:
                 console.error("Unknown function selector:", functionSelector);
                 return;
         }
 
-        console.log(result);
+        console.log("Day " + functionSelector + ": " + result);
     });
 
 }
