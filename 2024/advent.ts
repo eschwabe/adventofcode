@@ -1,5 +1,39 @@
 import * as fs from 'fs';
 
+
+function day_3_2(data: string) {
+
+    const matches = data.matchAll(/mul\((\d+),(\d+)\)|do\(\)|don\'t\(\)/g);
+    let sum = 0;
+    let enabled = true;
+
+    for (const match of matches) {
+        if (match[0] === 'do()') {
+            enabled = true;
+        } else if (match[0] === 'don\'t()') {
+            enabled = false;
+        } else {
+            if (enabled) {
+                sum += parseInt(match[1]) * parseInt(match[2]);
+            }
+        }
+    }
+
+    return sum;
+}
+
+function day_3_1(data: string) {
+
+    let sum = 0;
+    const matches = data.matchAll(/mul\((\d+),(\d+)\)/g);
+
+    for (const match of matches) {
+        sum += parseInt(match[1]) * parseInt(match[2]);
+    }
+
+    return sum;
+}
+
 function day_2_data_parser(data: string) {
     const reports: number[][] = [];
 
@@ -16,10 +50,10 @@ function day_2_check_report(report: number[]): number {
     let descend = false;
     let ascend = false;
 
-    for (let i = 0; i < report.length-1; i++) {
-        if (report[i] < report[i+1]) {
+    for (let i = 0; i < report.length - 1; i++) {
+        if (report[i] < report[i + 1]) {
             ascend = true;
-        } else if (report[i] > report[i+1]) {
+        } else if (report[i] > report[i + 1]) {
             descend = true;
         }
 
@@ -27,7 +61,7 @@ function day_2_check_report(report: number[]): number {
             return i;
         }
 
-        let diff = Math.abs(report[i] - report[i+1]);
+        let diff = Math.abs(report[i] - report[i + 1]);
         if (diff < 1 || diff > 3) {
             return i;
         }
@@ -169,6 +203,12 @@ function main() {
                 break;
             case '2.2':
                 result = day_2_2(data);
+                break;
+            case '3.1':
+                result = day_3_1(data);
+                break;
+            case '3.2':
+                result = day_3_2(data);
                 break;
             default:
                 console.error("Unknown function selector:", functionSelector);
