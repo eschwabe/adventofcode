@@ -1,5 +1,78 @@
 import * as fs from 'fs';
 
+function day_4_2(data: string) {
+    const grid = data.split('\n').map(line => line.split(''));
+    let count = 0;
+
+    function checkWord(x: number, y: number): boolean {
+        let occurances = 0;
+        if (x > 0 && y > 0 && x < grid.length - 1 && y < grid.length - 1 && grid[x][y] === 'A') {
+            if (grid[x - 1][y - 1] === 'M' && grid[x + 1][y + 1] === 'S') {
+                occurances += 1;
+            }
+            if (grid[x - 1][y + 1] === 'M' && grid[x + 1][y - 1] === 'S') {
+                occurances += 1;
+            }
+            if (grid[x + 1][y - 1] === 'M' && grid[x - 1][y + 1] === 'S') {
+                occurances += 1;
+            }
+            if (grid[x + 1][y + 1] === 'M' && grid[x - 1][y - 1] === 'S') {
+                occurances += 1;
+            }
+        }
+        return occurances === 2;
+    }
+
+    for (let x = 0; x < grid.length; x++) {
+        for (let y = 0; y < grid[x].length; y++) {
+            if (checkWord(x, y)) {
+                count += 1;
+            }
+        }
+    }
+
+    return count;
+}
+
+function day_4_1(data: string) {
+    const grid = data.split('\n').map(line => line.split(''));
+    const word = 'XMAS';
+    const directions = [
+        [0, 1],  // right
+        [1, 0],  // down
+        [1, 1],  // down-right
+        [1, -1], // down-left
+        [0, -1], // left
+        [-1, 0], // up
+        [-1, -1],// up-left
+        [-1, 1]  // up-right
+    ];
+    let count = 0;
+
+    function checkWord(x: number, y: number, dx: number, dy: number): boolean {
+        for (let i = 0; i < word.length; i++) {
+            const nx = x + i * dx;
+            const ny = y + i * dy;
+            if (nx < 0 || ny < 0 || nx >= grid.length || ny >= grid[0].length || grid[nx][ny] !== word[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    for (let x = 0; x < grid.length; x++) {
+        for (let y = 0; y < grid[x].length; y++) {
+            for (const [dx, dy] of directions) {
+                if (checkWord(x, y, dx, dy)) {
+                    count += 1;
+                }
+            }
+        }
+    }
+
+    return count;
+}
+
 
 function day_3_2(data: string) {
 
@@ -209,6 +282,12 @@ function main() {
                 break;
             case '3.2':
                 result = day_3_2(data);
+                break;
+            case '4.1':
+                result = day_4_1(data);
+                break;
+            case '4.2':
+                result = day_4_2(data);
                 break;
             default:
                 console.error("Unknown function selector:", functionSelector);
