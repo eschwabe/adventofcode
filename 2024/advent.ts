@@ -1,6 +1,85 @@
 import * as fs from 'fs';
 
-function day_4_2(data: string) {
+
+function day_5_1_parser(data: string): { rules: Record<string, Set<string>>, pages: string[][] } {
+    const lines = data.split('\n');
+    const rules: Record<string, Set<string>> = {};
+    const pages: string[][] = [];
+    let rulesParse = true;
+
+    for (const line of lines) {
+        if (line.trim() === '') {
+            rulesParse = false;
+            continue;
+        }
+
+        if (rulesParse) {
+            const [key, value] = line.split('|');
+            if (key && value) {
+                if (!rules[key]) {
+                    rules[key] = new Set();
+                }
+                rules[key].add(value);
+            }
+        }
+        else {
+            const updates = line.split(',');
+            pages.push(updates);
+        }
+    }
+
+    return { rules, pages };
+}
+
+function day_5_2(data: string): number {
+
+    const { rules, pages } = day_5_1_parser(data);
+    let validOrderSum = 0;
+    for (const page of pages) {
+        let valid = true;
+        for (let i = 0; i < page.length - 1; i++) {
+            const rule = rules[page[i]];
+            if (!rule.has(page[i + 1])) {
+                valid = false;
+                // swap elements and retsart scan
+                let tmp = page[i];
+                page[i] = page[i + 1];
+                page[i + 1] = tmp;
+                i = -1;
+            }
+        }
+        // if the page was ever invalid, add the middle element to the sum
+        if (!valid) {
+            const mid = Math.round((page.length - 1) / 2);
+            validOrderSum += parseInt(page[mid]);
+        }
+    }
+    return validOrderSum;
+}
+
+function day_5_1(data: string): number {
+
+    const { rules, pages } = day_5_1_parser(data);
+    let validOrderSum = 0;
+    for (const page of pages) {
+        let valid = true;
+        for (let i = 0; i < page.length - 1; i++) {
+            const rule = rules[page[i]];
+            if (!rule.has(page[i + 1])) {
+                valid = false;
+                break;
+            }
+        }
+        if (valid) {
+            const mid = Math.round((page.length - 1) / 2);
+            validOrderSum += parseInt(page[mid]);
+        }
+    }
+    return validOrderSum;
+}
+
+
+function day_4_2(data: string): number {
     const grid = data.split('\n').map(line => line.split(''));
     let count = 0;
 
@@ -288,6 +367,12 @@ function main() {
                 break;
             case '4.2':
                 result = day_4_2(data);
+                break;
+            case '5.1':
+                result = day_5_1(data);
+                break;
+            case '5.2':
+                result = day_5_2(data);
                 break;
             default:
                 console.error("Unknown function selector:", functionSelector);
