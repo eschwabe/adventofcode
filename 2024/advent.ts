@@ -1,6 +1,90 @@
 import * as fs from 'fs';
 
 
+function day_6_parser(data: string): string[][] {
+    return data.split('\n').map(group => group.split(''));
+}
+
+function day_6_find_start(grid: string[][]): [number, number] {
+    for (let row = 0; row < grid.length; row++) {
+        for (let col = 0; col < grid[row].length; col++) {
+            if (grid[row][col] === '^') {
+                return [row, col];
+            }
+        }
+    }
+    return [-1, -1];
+}
+
+function day_6_traverse_grid(grid: string[][], row: number, col: number): number {
+    const directions = [
+        [-1, 0], // up
+        [0, 1],  // right
+        [1, 0],  // down
+        [0, -1]  // left
+    ];
+    let dir = 0;
+    let count = 1;
+
+    while (row >= 0 && row < grid.length && col >= 0 && col < grid[row].length) {
+        if (grid[row][col] === 'X' + dir) {
+            return -1; // loop detected
+        }
+        
+        if (!grid[row][col].startsWith('X') && !grid[row][col].startsWith('^')) {
+            grid[row][col] = 'X' + dir;
+            count++;
+        }
+
+        let rowNext = row + directions[dir][0];
+        let colNext = col + directions[dir][1];
+
+        if (rowNext < 0 || rowNext >= grid.length || colNext < 0 || colNext >= grid[row].length) {
+            return count;
+        }
+
+        if (grid[rowNext][colNext].startsWith('#')) {
+            dir = (dir + 1) % 4;
+        } else {
+            row = rowNext;
+            col = colNext;
+        }
+    }
+
+    return count;
+}
+
+function day_6_2(data: string): number {
+    const grid = day_6_parser(data);
+    const gridCopy = grid.map(row => row.slice());
+
+    // initial traverse to find guard path
+    let [startRow, startCol] = day_6_find_start(grid);
+    day_6_traverse_grid(grid, startRow, startCol);
+
+    // test for loops with walls inserted
+    let loopCount = 0;
+    for (let row = 0; row < grid.length; row++) {
+        for (let col = 0; col < grid[row].length; col++) {
+            if (grid[row][col].startsWith('X')) {
+                const gridTest = gridCopy.map(row => row.slice());
+                gridTest[row][col] = '#';
+                if (day_6_traverse_grid(gridTest, startRow, startCol) === -1) {
+                    loopCount++;
+                }
+            }
+        }
+    }
+
+    return loopCount;
+}
+
+function day_6_1(data: string): number {
+    const grid = day_6_parser(data);
+    let [row, col] = day_6_find_start(grid);
+    return day_6_traverse_grid(grid, row, col);
+}
+
 function day_5_1_parser(data: string): { rules: Record<string, Set<string>>, pages: string[][] } {
     const lines = data.split('\n');
     const rules: Record<string, Set<string>> = {};
@@ -373,6 +457,12 @@ function main() {
                 break;
             case '5.2':
                 result = day_5_2(data);
+                break;
+            case '6.1':
+                result = day_6_1(data);
+                break;
+            case '6.2':
+                result = day_6_2(data);
                 break;
             default:
                 console.error("Unknown function selector:", functionSelector);
