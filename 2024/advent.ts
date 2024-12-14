@@ -438,6 +438,23 @@ function day_1_2(data: string) {
 
 function main() {
 
+    const functionMap = {
+        '1.1': day_1_1,
+        '1.2': day_1_2,
+        '2.1': day_2_1,
+        '2.2': day_2_2,
+        '3.1': day_3_1,
+        '3.2': day_3_2,
+        '4.1': day_4_1,
+        '4.2': day_4_2,
+        '5.1': day_5_1,
+        '5.2': day_5_2,
+        '6.1': day_6_1,
+        '6.2': day_6_2,
+        '7.1': day_7_1,
+        '7.2': day_7_2
+    };
+
     function parseArguments() {
         const args = process.argv.slice(2);
         if (args.length < 2) {
@@ -457,54 +474,12 @@ function main() {
             return;
         }
 
-        let result;
-        switch (functionSelector) {
-            case '1.1':
-                result = day_1_1(data);
-                break;
-            case '1.2':
-                result = day_1_2(data);
-                break;
-            case '2.1':
-                result = day_2_1(data);
-                break;
-            case '2.2':
-                result = day_2_2(data);
-                break;
-            case '3.1':
-                result = day_3_1(data);
-                break;
-            case '3.2':
-                result = day_3_2(data);
-                break;
-            case '4.1':
-                result = day_4_1(data);
-                break;
-            case '4.2':
-                result = day_4_2(data);
-                break;
-            case '5.1':
-                result = day_5_1(data);
-                break;
-            case '5.2':
-                result = day_5_2(data);
-                break;
-            case '6.1':
-                result = day_6_1(data);
-                break;
-            case '6.2':
-                result = day_6_2(data);
-                break;
-            case '7.1':
-                result = day_7_1(data);
-                break;
-            case '7.2':
-                result = day_7_2(data);
-                break;
-            default:
-                console.error("Unknown function selector:", functionSelector);
-                return;
+        if (!functionMap[functionSelector as keyof typeof functionMap]) {
+            console.error("Unknown function selector:", functionSelector);
+            return;
         }
+
+        let result = functionMap[functionSelector as keyof typeof functionMap](data);
 
         console.log("Day " + functionSelector + ": " + result);
     });
