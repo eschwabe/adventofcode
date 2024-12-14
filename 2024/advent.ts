@@ -1,6 +1,37 @@
 import * as fs from 'fs';
 
 
+function day_7_evaluation(data: string, concatenation: boolean): number {
+    const equations = data.split('\n').map(group => group.split(/\:\W|\W/).map(group => parseInt(group)));
+    let validSum = 0;
+
+    function isValid(total: number, result: number, eq: number[]): boolean {
+        if (eq.length === 0) {
+            return total === result;
+        }
+
+        return isValid(total, result + eq[0], eq.slice(1)) ||
+            isValid(total, result * eq[0], eq.slice(1)) ||
+            (concatenation && isValid(total, parseInt(result.toString() + eq[0].toString()), eq.slice(1)));
+    }
+
+    for (let eq of equations) {
+        if (isValid(eq[0], 0, eq.slice(1))) {
+            validSum += eq[0];
+        }
+    }
+
+    return validSum;
+}
+
+function day_7_2(data: string): number {
+    return day_7_evaluation(data, true)
+}
+
+function day_7_1(data: string): number {
+    return day_7_evaluation(data, false)
+}
+
 function day_6_parser(data: string): string[][] {
     return data.split('\n').map(group => group.split(''));
 }
@@ -30,7 +61,7 @@ function day_6_traverse_grid(grid: string[][], row: number, col: number): number
         if (grid[row][col] === 'X' + dir) {
             return -1; // loop detected
         }
-        
+
         if (!grid[row][col].startsWith('X') && !grid[row][col].startsWith('^')) {
             grid[row][col] = 'X' + dir;
             count++;
@@ -463,6 +494,12 @@ function main() {
                 break;
             case '6.2':
                 result = day_6_2(data);
+                break;
+            case '7.1':
+                result = day_7_1(data);
+                break;
+            case '7.2':
+                result = day_7_2(data);
                 break;
             default:
                 console.error("Unknown function selector:", functionSelector);
