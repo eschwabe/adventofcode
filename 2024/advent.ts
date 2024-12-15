@@ -1,5 +1,82 @@
 import * as fs from 'fs';
 
+class GridPosition {
+    row: number = 0;
+    col: number = 0;
+}
+
+function day_8_parser(data: string): string[][] {
+    return data.split('\n').map(group => group.split(''));
+}
+
+function day_8_find_antennas(cityMap: string[][]): Map<string, GridPosition[]> {
+    const antennas = new Map<string, GridPosition[]>();
+
+    for (let row = 0; row < cityMap.length; row++) {
+        for (let col = 0; col < cityMap[row].length; col++) {
+            if (cityMap[row][col].match(/[A-Za-z0-9]/)) {
+                if (!antennas.has(cityMap[row][col])) {
+                    antennas.set(cityMap[row][col], []);
+                }
+                antennas.get(cityMap[row][col])!.push({ row, col });
+            }
+        }
+    }
+
+    return antennas;
+}
+
+function day_8_find_antinodes(data: string, expand: boolean): number {
+    
+    const cityMap = day_8_parser(data);
+    const antennas = day_8_find_antennas(cityMap);
+    let antinodes = new Set<string>();
+
+    for (let [antenna, locs] of antennas) {
+        for (let i = 0; i < locs.length; i++) {
+            for (let j = i + 1; j < locs.length; j++) {
+
+                function validAntinode(pos: GridPosition): boolean {
+                    let valid = pos.row >= 0 && pos.row < cityMap.length && pos.col >= 0 && pos.col < cityMap[0].length;
+                    if (valid) {  
+                        antinodes.add(JSON.stringify(pos));
+                    }
+                    return valid;
+                }
+
+                let dRow = locs[j].row - locs[i].row;
+                let dCol = locs[j].col - locs[i].col;
+
+                if (!expand) {
+                    validAntinode({ row: locs[i].row - dRow, col: locs[i].col - dCol });
+                    validAntinode({ row: locs[j].row + dRow, col: locs[j].col + dCol });
+                }
+                else {
+                    let pos = { row: locs[i].row, col: locs[i].col };
+                    while (validAntinode(pos)) {
+                        pos.row -= dRow;
+                        pos.col -= dCol;
+                    }
+                    pos = { row: locs[j].row, col: locs[j].col };
+                    while (validAntinode(pos)) {
+                        pos.row += dRow;
+                        pos.col += dCol;
+                    }
+                }
+            }
+        }
+    }
+
+    return antinodes.size;
+}
+
+function day_8_2(data: string): number {
+    return day_8_find_antinodes(data, true);
+}
+
+function day_8_1(data: string): number {
+    return day_8_find_antinodes(data, false);
+}
 
 function day_7_evaluation(data: string, concatenation: boolean): number {
     const equations = data.split('\n').map(group => group.split(/\:\W|\W/).map(group => parseInt(group)));
@@ -452,7 +529,9 @@ function main() {
         '6.1': day_6_1,
         '6.2': day_6_2,
         '7.1': day_7_1,
-        '7.2': day_7_2
+        '7.2': day_7_2,
+        '8.1': day_8_1,
+        '8.2': day_8_2,
     };
 
     function parseArguments() {
