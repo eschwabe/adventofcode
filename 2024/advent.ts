@@ -5,6 +5,113 @@ class GridPosition {
     col: number = 0;
 }
 
+function day_9_disk_layout(data: string): number[] {
+    // 12345
+    // 0..111....22222
+
+    let diskMap = data.split('').map(Number);
+    let fileId = 0;
+    let diskLayout : number[] = []
+    for (let i = 0; i < diskMap.length; i++) {
+        for (let j = 0; j < diskMap[i]; j++) {
+            if (i % 2 === 0) {
+                diskLayout.push(fileId);
+            }
+            else {
+                diskLayout.push(-1);
+            }
+        }
+        if (i % 2 === 0) {
+            fileId++;
+        }
+    }
+
+    return diskLayout;
+}
+
+function day_9_checksum(diskLayout: number[]) {
+    let sum = 0;
+    for (let i = 0; i < diskLayout.length; i++) {
+        if (diskLayout[i] != -1) {
+            sum += i * diskLayout[i];
+        }
+    }
+    return sum;
+}
+
+function day_9_2(data: string): number {
+
+    let diskLayout = day_9_disk_layout(data);
+
+    let end = diskLayout.length - 1;
+
+    while (end > 0) {
+
+        // get end block start/end positions
+        while (diskLayout[end] === -1) {
+            end--;
+        }
+        let fileId = diskLayout[end];
+        let fileEnd = end;
+
+        while (diskLayout[end] === fileId) {
+            end--;
+        }
+        let fileStart = end + 1;
+
+        // find a block to swap
+        let start = 0;
+        while (start < fileStart) {
+            while (diskLayout[start] != -1 && start < fileStart) {
+                start++;
+            }
+            let freeSpaceStart = start;
+            while (diskLayout[start] === -1) {
+                start++;
+            }
+            let freeSpaceEnd = start - 1;
+
+            // swap if fits
+            if (fileEnd - fileStart <= freeSpaceEnd - freeSpaceStart) {
+                for (let i = freeSpaceStart; i <= freeSpaceStart + (fileEnd - fileStart); i++) {
+                    diskLayout[i] = fileId;
+                }
+                for (let i = fileStart; i <= fileEnd; i++) {
+                    diskLayout[i] = -1;
+                }
+                break;
+            }
+        }
+    }
+
+    return day_9_checksum(diskLayout);
+}
+
+function day_9_1(data: string): number {
+
+    let diskLayout = day_9_disk_layout(data);
+
+    let start = 0;
+    let end = diskLayout.length - 1;
+
+    while (start < end) {
+        if (diskLayout[start] != -1) {
+            start++;
+        }
+        if (diskLayout[end] === -1) {
+            end--;
+        }
+        if (diskLayout[start] === -1 && diskLayout[end] != -1) {
+            diskLayout[start] = diskLayout[end];
+            diskLayout[end] = -1;
+            start++;
+            end--;
+        }
+    }
+
+    return day_9_checksum(diskLayout);
+}
+
 function day_8_parser(data: string): string[][] {
     return data.split('\n').map(group => group.split(''));
 }
@@ -532,6 +639,8 @@ function main() {
         '7.2': day_7_2,
         '8.1': day_8_1,
         '8.2': day_8_2,
+        '9.1': day_9_1,
+        '9.2': day_9_2,
     };
 
     function parseArguments() {
