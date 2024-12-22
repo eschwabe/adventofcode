@@ -5,9 +5,67 @@ class GridPosition {
     col: number = 0;
 }
 
+function day_10_find_peaks(topoMap: number[][], row: number, col: number, prevHeight: number, uniquePaths: boolean, peaks: Set<string>) {
+
+    // check if out of bounds
+    if (row < 0 || row >= topoMap.length || col < 0 || col >= topoMap[row].length) {
+        return;
+    }
+
+    // path height must increase by 1
+    if (topoMap[row][col] != prevHeight + 1) {
+        return;
+    }
+
+    // path ends at a peak
+    if (topoMap[row][col] === 9) {
+        if (uniquePaths) {
+            peaks.add(`${row},${col},${peaks.size}`);
+        }
+        else {
+            peaks.add(`${row},${col}`);
+        }
+        return;
+    }
+
+    day_10_find_peaks(topoMap, row - 1, col, topoMap[row][col], uniquePaths, peaks);
+    day_10_find_peaks(topoMap, row + 1, col, topoMap[row][col], uniquePaths, peaks);
+    day_10_find_peaks(topoMap, row, col - 1, topoMap[row][col], uniquePaths, peaks);
+    day_10_find_peaks(topoMap, row, col + 1, topoMap[row][col], uniquePaths, peaks);
+
+    return;
+}
+
+function day_10_find_trailheads(data: string, uniquePaths: boolean): number {
+
+    let topoMap = data.split('\n').map(group => group.split('').map(Number));
+    let peaksSum = 0;
+
+    // find trailheads
+    for (let row = 0; row < topoMap.length; row++) {
+        for (let col = 0; col < topoMap[row].length; col++) {
+            if (topoMap[row][col] === 0) {
+                let peaks = new Set<string>();
+                day_10_find_peaks(topoMap, row, col, -1, uniquePaths, peaks);
+                peaksSum += peaks.size;
+            }
+        }
+    }
+
+    return peaksSum;
+}
+
+function day_10_2(data: string): number {
+    return day_10_find_trailheads(data, true);
+}
+
+function day_10_1(data: string): number {
+    return day_10_find_trailheads(data, false);
+}
+
 function day_9_disk_layout(data: string): number[] {
-    // 12345
-    // 0..111....22222
+    // DiskMap: 12345
+    // DiskLayout: 0..111....22222
 
     let diskMap = data.split('').map(Number);
     let fileId = 0;
@@ -641,6 +699,8 @@ function main() {
         '8.2': day_8_2,
         '9.1': day_9_1,
         '9.2': day_9_2,
+        '10.1': day_10_1,
+        '10.2': day_10_2,
     };
 
     function parseArguments() {
