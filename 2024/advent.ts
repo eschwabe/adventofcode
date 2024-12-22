@@ -5,6 +5,45 @@ class GridPosition {
     col: number = 0;
 }
 
+function day_11_apply_rules(stones: string[]): string[] {
+    const newStones: string[] = [];
+
+    for (let i = 0; i < stones.length; i++) {
+        if (stones[i] === '0') {
+            newStones.push('1');
+        }
+        else if (stones[i].length % 2 === 0) {
+            newStones.push(stones[i].slice(0, stones[i].length / 2));
+            newStones.push(Number.parseInt(stones[i].slice(stones[i].length / 2)).toString());
+        }
+        else {
+            newStones.push((Number.parseInt(stones[i]) * 2024).toString());
+        }
+    }
+
+    return newStones;
+}
+
+function day_11_blinks(data: string, blinks: number): number {
+    const stones = data.split(' ');
+    let blinkStones = stones;
+
+    for (let i = 0; i < blinks; i++) {
+        blinkStones = day_11_apply_rules(blinkStones);
+        console.log(`Blinks: ${i}`);
+    }
+
+    return blinkStones.length;
+}
+
+function day_11_2(data: string): number {
+    return day_11_blinks(data, 75);
+}
+
+function day_11_1(data: string): number {
+    return day_11_blinks(data, 25);
+}
+
 function day_10_find_peaks(topoMap: number[][], row: number, col: number, prevHeight: number, uniquePaths: boolean, peaks: Set<string>) {
 
     // check if out of bounds
@@ -701,6 +740,8 @@ function main() {
         '9.2': day_9_2,
         '10.1': day_10_1,
         '10.2': day_10_2,
+        '11.1': day_11_1,
+        '11.2': day_11_2,
     };
 
     function parseArguments() {
