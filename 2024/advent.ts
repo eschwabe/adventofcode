@@ -5,35 +5,45 @@ class GridPosition {
     col: number = 0;
 }
 
-function day_11_apply_rules(stones: string[]): string[] {
-    const newStones: string[] = [];
+function day_11_apply_rules_recurse(stone: string, remainingBlinks: number, cache: Map<string, number>): number {
 
-    for (let i = 0; i < stones.length; i++) {
-        if (stones[i] === '0') {
-            newStones.push('1');
-        }
-        else if (stones[i].length % 2 === 0) {
-            newStones.push(stones[i].slice(0, stones[i].length / 2));
-            newStones.push(Number.parseInt(stones[i].slice(stones[i].length / 2)).toString());
-        }
-        else {
-            newStones.push((Number.parseInt(stones[i]) * 2024).toString());
-        }
+    // check cache if stone has been previously computed
+    const cacheKey = `${stone}-${remainingBlinks}`;
+    if (cache.has(cacheKey)) {
+        return cache.get(cacheKey)!;
     }
 
-    return newStones;
+    if (remainingBlinks === 0) {
+        return 1;
+    }
+
+    let totalStones = 0;
+    if (stone === '0') {
+        totalStones = day_11_apply_rules_recurse('1', remainingBlinks - 1, cache);
+    }
+    else if (stone.length % 2 === 0) {
+        totalStones = day_11_apply_rules_recurse(stone.slice(0, stone.length / 2), remainingBlinks - 1, cache) +
+            day_11_apply_rules_recurse(Number.parseInt(stone.slice(stone.length / 2)).toString(), remainingBlinks - 1, cache);
+    }
+    else {
+        totalStones = day_11_apply_rules_recurse((Number.parseInt(stone) * 2024).toString(), remainingBlinks - 1, cache);
+    }
+
+    cache.set(cacheKey, totalStones);
+
+    return totalStones;
 }
 
 function day_11_blinks(data: string, blinks: number): number {
     const stones = data.split(' ');
-    let blinkStones = stones;
+    let cache = new Map<string, number>();
+    let stoneCount = 0;
 
-    for (let i = 0; i < blinks; i++) {
-        blinkStones = day_11_apply_rules(blinkStones);
-        console.log(`Blinks: ${i}`);
+    for (let stone of stones) {
+        stoneCount += day_11_apply_rules_recurse(stone, blinks, cache);
     }
 
-    return blinkStones.length;
+    return stoneCount;
 }
 
 function day_11_2(data: string): number {
