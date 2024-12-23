@@ -17,7 +17,8 @@ function day_12_find_area_perimeter(plot: string[][], row: number, col: number, 
 
     let area = 0;
     let perimeter = 0;
-    let perimeterVisted = new Set<string>();
+    let bulkPerimeter = 0;
+    let perimeterLocations = new Set<string>();
 
     function validPosition(row: number, col: number): boolean {
         return row >= 0 && row < plot.length && col >= 0 && col < plot[row].length;
@@ -32,19 +33,12 @@ function day_12_find_area_perimeter(plot: string[][], row: number, col: number, 
         area++;
 
         for (let i = 0; i < directions.length; i++) {
-            let newRow = row + directions[i][0];
-            let newCol = col + directions[i][1];
+            let [dRow, dCol] = directions[i];
+            let newRow = row + dRow;
+            let newCol = col + dCol;
             if (!validPosition(newRow, newCol) || plot[newRow][newCol] != regionType) {
-                if (bulk) {
-                    if ((i == 0 || i == 2) && (!perimeterVisted.has(`${row},${col-1},${directions[i]}`) && !perimeterVisted.has(`${row},${col+1},${directions[i]}`)) ||
-                        (i == 1 || i == 3) && (!perimeterVisted.has(`${row-1},${col},${directions[i]}`) && !perimeterVisted.has(`${row+1},${col},${directions[i]}`))) {
-                            perimeter++;
-                    }
-                    perimeterVisted.add(`${row},${col},${directions[i]}`);
-                }
-                else {
-                    perimeter++;
-                }
+                perimeterLocations.add(`${row},${col},${i}`);
+                perimeter++;
             }
             else {
                 dfs(regionType, newRow, newCol);
@@ -53,6 +47,25 @@ function day_12_find_area_perimeter(plot: string[][], row: number, col: number, 
     }
 
     dfs(plot[row][col], row, col);
+
+    // brute force bulk perimeter calculation
+    if (bulk) {
+        let perimeterVisited = new Set<string>();
+        for (let row = 0; row < plot.length; row++) {
+            for (let col = 0; col < plot[row].length; col++) {
+                for (let i = 0; i < directions.length; i++) {
+                    if (perimeterLocations.has(`${row},${col},${i}`)) {
+                        if ((i == 0 || i == 2) && (!perimeterVisited.has(`${row},${col-1},${i}`) && !perimeterVisited.has(`${row},${col+1},${i}`)) ||
+                            (i == 1 || i == 3) && (!perimeterVisited.has(`${row-1},${col},${i}`) && !perimeterVisited.has(`${row+1},${col},${i}`))) {
+                                bulkPerimeter++;
+                        }
+                        perimeterVisited.add(`${row},${col},${i}`);
+                    }
+                }
+            }
+        }
+        return [area, bulkPerimeter];
+    }
 
     return [area, perimeter];
 }
