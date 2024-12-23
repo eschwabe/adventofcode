@@ -1,8 +1,86 @@
 import * as fs from 'fs';
+import { permission } from 'process';
 
 class GridPosition {
     row: number = 0;
     col: number = 0;
+}
+
+function day_12_find_area_perimeter(plot: string[][], row: number, col: number, visited: Set<string>, bulk: boolean) : [number, number] {
+
+    const directions = [
+        [-1, 0], // up      -- perimeter left/right
+        [0, 1],  // right   -- perimeter up/down
+        [1, 0],  // down    -- perimeter left/right
+        [0, -1]  // left    -- perimeter up/down
+    ];
+
+    let area = 0;
+    let perimeter = 0;
+    let perimeterVisted = new Set<string>();
+
+    function validPosition(row: number, col: number): boolean {
+        return row >= 0 && row < plot.length && col >= 0 && col < plot[row].length;
+    }
+
+    function dfs(regionType: string, row: number, col: number) {
+        if (!validPosition(row, col) || plot[row][col] != regionType || visited.has(`${row},${col}`)) {
+            return;
+        }
+
+        visited.add(`${row},${col}`);
+        area++;
+
+        for (let i = 0; i < directions.length; i++) {
+            let newRow = row + directions[i][0];
+            let newCol = col + directions[i][1];
+            if (!validPosition(newRow, newCol) || plot[newRow][newCol] != regionType) {
+                if (bulk) {
+                    if ((i == 0 || i == 2) && (!perimeterVisted.has(`${row},${col-1},${directions[i]}`) && !perimeterVisted.has(`${row},${col+1},${directions[i]}`)) ||
+                        (i == 1 || i == 3) && (!perimeterVisted.has(`${row-1},${col},${directions[i]}`) && !perimeterVisted.has(`${row+1},${col},${directions[i]}`))) {
+                            perimeter++;
+                    }
+                    perimeterVisted.add(`${row},${col},${directions[i]}`);
+                }
+                else {
+                    perimeter++;
+                }
+            }
+            else {
+                dfs(regionType, newRow, newCol);
+            }
+        }
+    }
+
+    dfs(plot[row][col], row, col);
+
+    return [area, perimeter];
+}
+
+function day_12_find_regions(data: string, bulk: boolean): number {
+    const plot = data.split('\n').map(group => group.split(''));
+    let visited = new Set<string>();
+    let fenceCost = 0;
+
+    for (let row = 0; row < plot.length; row++) {
+        for (let col = 0; col < plot[row].length; col++) {
+            let [area, perimeter] = day_12_find_area_perimeter(plot, row, col, visited, bulk);
+            fenceCost += area * perimeter;
+            if (area > 0 || perimeter > 0) {
+                console.log(`${plot[row][col]}: area=${area}, perimeter=${perimeter}`);
+            }
+        }
+    }
+
+    return fenceCost;
+}
+
+function day_12_2(data: string): number {
+    return day_12_find_regions(data, true);
+}
+
+function day_12_1(data: string): number {
+    return day_12_find_regions(data, false);
 }
 
 function day_11_apply_rules_recurse(stone: string, remainingBlinks: number, cache: Map<string, number>): number {
@@ -752,6 +830,8 @@ function main() {
         '10.2': day_10_2,
         '11.1': day_11_1,
         '11.2': day_11_2,
+        '12.1': day_12_1,
+        '12.2': day_12_2,
     };
 
     function parseArguments() {
