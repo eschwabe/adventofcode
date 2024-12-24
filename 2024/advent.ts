@@ -1,9 +1,92 @@
 import * as fs from 'fs';
 import { permission } from 'process';
 
-class GridPosition {
-    row: number = 0;
-    col: number = 0;
+class Day13_ClawMachine {
+    A_X: number = 0;
+    A_Y: number = 0;
+    B_X: number = 0;
+    B_Y: number = 0;
+    P_X: number = 0;
+    P_Y: number = 0;
+}
+
+function day_13_1_parser(data: string): Day13_ClawMachine[] {
+    const clawMachines: Day13_ClawMachine[] = [];
+    const sections = data.split(/\n\s*\n/);
+
+    for (let section of sections) {
+        let match: RegExpMatchArray | null = section.match(/Button A\: X\+(\d+), Y\+(\d+)\nButton B\: X\+(\d+), Y\+(\d+)\nPrize\: X\=(\d+), Y\=(\d+)/)
+        if (match) {
+            let clawMachine = new Day13_ClawMachine();
+            clawMachine.A_X = parseInt(match[1]);
+            clawMachine.A_Y = parseInt(match[2]);
+            clawMachine.B_X = parseInt(match[3]);
+            clawMachine.B_Y = parseInt(match[4]);
+            clawMachine.P_X = parseInt(match[5]);
+            clawMachine.P_Y = parseInt(match[6]);
+            clawMachines.push(clawMachine);
+        }
+    }
+
+    return clawMachines;
+}
+
+function day_13_compute_min_tokens(machine: Day13_ClawMachine, X: number, Y: number, A_presses: number, B_presses: number, cache: Map<string, number>): number {
+    const buttonA_cost = 3;
+    const buttonB_cost = 1;
+
+    if (X === machine.P_X && Y === machine.P_Y) {
+        return 0;
+    }
+
+    if (X > machine.P_X || Y > machine.P_Y) {
+        return -1;
+    }
+
+    if (A_presses > 100 || B_presses > 100) {
+        return -1;
+    }
+
+    let cacheKey = `${X},${Y},${A_presses},${B_presses}`;
+    if (cache.has(cacheKey)) {
+        return cache.get(cacheKey)!;
+    }
+
+    let a_tokens = day_13_compute_min_tokens(machine, X+machine.A_X, Y+machine.A_Y, A_presses+1, B_presses, cache);
+    let b_tokens = day_13_compute_min_tokens(machine, X+machine.B_X, Y+machine.B_Y, A_presses, B_presses+1, cache);
+
+    cache.set(`${X+machine.A_X},${Y+machine.A_Y},${A_presses+1},${B_presses}`, a_tokens);
+    cache.set(`${X+machine.A_X},${Y+machine.A_Y},${A_presses},${B_presses+1}`, b_tokens);
+
+    if (a_tokens === -1 && b_tokens === -1) {
+        return -1;
+    }
+
+    if ((a_tokens != -1 && b_tokens == -1) || (a_tokens != -1 && a_tokens < b_tokens)) {
+        return a_tokens + buttonA_cost;
+    }
+    else {
+        return b_tokens + buttonB_cost;
+    }
+}
+
+function day_13_1(data: string): number {
+
+    const clawMachines = day_13_1_parser(data);
+    let total_tokens = 0;
+    for (let machine of clawMachines) {
+        let cache = new Map<string, number>();
+        let min_tokens = day_13_compute_min_tokens(machine, 0, 0, 0, 0, cache);
+        if (min_tokens != -1) {
+            total_tokens += min_tokens;
+            console.log(`Machine: A(${machine.A_X},${machine.A_Y}), B(${machine.B_X},${machine.B_Y}), P(${machine.P_X},${machine.P_Y}) - Tokens: ${min_tokens}`);
+        }
+        else {
+            console.log(`Machine: A(${machine.A_X},${machine.A_Y}), B(${machine.B_X},${machine.B_Y}), P(${machine.P_X},${machine.P_Y}) - No Solution`);
+        }
+    }
+
+    return total_tokens;
 }
 
 function day_12_find_area_perimeter(plot: string[][], row: number, col: number, visited: Set<string>, bulk: boolean) : [number, number] {
@@ -310,12 +393,17 @@ function day_9_1(data: string): number {
     return day_9_checksum(diskLayout);
 }
 
+class Day8_GridPosition {
+    row: number = 0;
+    col: number = 0;
+}
+
 function day_8_parser(data: string): string[][] {
     return data.split('\n').map(group => group.split(''));
 }
 
-function day_8_find_antennas(cityMap: string[][]): Map<string, GridPosition[]> {
-    const antennas = new Map<string, GridPosition[]>();
+function day_8_find_antennas(cityMap: string[][]): Map<string, Day8_GridPosition[]> {
+    const antennas = new Map<string, Day8_GridPosition[]>();
 
     for (let row = 0; row < cityMap.length; row++) {
         for (let col = 0; col < cityMap[row].length; col++) {
@@ -341,7 +429,7 @@ function day_8_find_antinodes(data: string, expand: boolean): number {
         for (let i = 0; i < locs.length; i++) {
             for (let j = i + 1; j < locs.length; j++) {
 
-                function validAntinode(pos: GridPosition): boolean {
+                function validAntinode(pos: Day8_GridPosition): boolean {
                     let valid = pos.row >= 0 && pos.row < cityMap.length && pos.col >= 0 && pos.col < cityMap[0].length;
                     if (valid) {  
                         antinodes.add(JSON.stringify(pos));
@@ -845,6 +933,7 @@ function main() {
         '11.2': day_11_2,
         '12.1': day_12_1,
         '12.2': day_12_2,
+        '13.1': day_13_1,
     };
 
     function parseArguments() {
