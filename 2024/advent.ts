@@ -1,5 +1,106 @@
+import { time } from 'console';
 import * as fs from 'fs';
 import { permission } from 'process';
+
+class Day14_Robot {
+    P_X: number = 0;
+    P_Y: number = 0;
+    V_X: number = 0;
+    V_Y: number = 0;
+    D_X: number = 0;
+    D_Y: number = 0;
+}
+
+function day_14_mod(n: number, m: number): number {
+    return ((n % m) + m) % m;
+  }
+
+function day_14_parser(data: string): Day14_Robot[] {
+    const robots: Day14_Robot[] = [];
+    const lines = data.split('\n');
+
+    for (let line of lines) {
+        let match: RegExpMatchArray | null = line.match(/p=(-?\d+),(-?\d+) v=(-?\d+),(-?\d+)/)
+        if (match) {
+            let robot = new Day14_Robot();
+            robot.P_X = parseInt(match[1]);
+            robot.P_Y = parseInt(match[2]);
+            robot.V_X = parseInt(match[3]);
+            robot.V_Y = parseInt(match[4]);
+            robots.push(robot);
+        }
+    }
+
+    return robots;
+}
+
+function day_14_1(data: string): number {
+
+    const robots = day_14_parser(data);
+    const grid_rows = 103;
+    const grid_cols = 101;
+    const seconds = 100;
+
+    let quadrant_robot_count = new Map<string, number>();
+    
+    for (let robot of robots) {
+        robot.D_X = day_14_mod(robot.P_X + (robot.V_X * seconds), grid_cols);
+        robot.D_Y = day_14_mod(robot.P_Y + (robot.V_Y * seconds), grid_rows);
+
+        if (robot.D_X == Math.floor(grid_cols / 2) || robot.D_Y == Math.floor(grid_rows / 2)) {
+            console.log(`Robot Outside Quadrant: ${robot.D_X},${robot.D_Y}`);
+            continue;
+        }
+
+        let quadrant_x = (robot.D_X <= (grid_cols / 2)) ? 0 : 1;
+        let quadrant_y = (robot.D_Y <= (grid_rows / 2)) ? 0 : 1;
+        let quadrant_key = `${quadrant_x},${quadrant_y}`;
+
+        if (!quadrant_robot_count.has(quadrant_key)) {
+            quadrant_robot_count.set(`${quadrant_x},${quadrant_y}`, 0);
+        }
+
+        quadrant_robot_count.set(quadrant_key, quadrant_robot_count.get(quadrant_key)! + 1);
+    }
+
+    let safety_factor: number = 0;
+    let safety_factor_init = false;
+    for (let [key, value] of quadrant_robot_count) {
+        console.log(`Quadrant: ${key} - Robot Count: ${value}`);
+        if (safety_factor_init) {
+            safety_factor = safety_factor * value;
+        }
+        else {
+            safety_factor = value;
+            safety_factor_init = true;
+        }
+    }
+
+    console.log(`Safety Factor: ${safety_factor}`);
+
+    return safety_factor;
+}
+
+function day_14_2(data: string): number {
+    const robots = day_14_parser(data);
+    const grid_rows = 103;
+    const grid_cols = 101;
+
+    let second = 0;
+    for (let second = 0; second < 10; second++) {
+        const grid = Array.from({ length: grid_rows }, () => Array(grid_cols).fill('.'));
+        for (let robot of robots) {
+            grid[robot.P_Y][robot.P_X] = '#';
+        }
+        console.log(`-------------- Second: ${second}--------------`);
+        for (let row of grid) {
+            console.log(row.join(''));
+        }
+    }
+
+    return second;
+}
+
 
 class Day13_ClawMachine {
     A_X: number = 0;
@@ -934,6 +1035,8 @@ function main() {
         '12.1': day_12_1,
         '12.2': day_12_2,
         '13.1': day_13_1,
+        '14.1': day_14_1,
+        '14.2': day_14_2,
     };
 
     function parseArguments() {
