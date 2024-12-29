@@ -1,6 +1,109 @@
-import { time } from 'console';
 import * as fs from 'fs';
-import { permission } from 'process';
+
+function day_15_parser(data: string): [string[][], string[]] {
+    const lines = data.split('\n')
+    const breakIndex = lines.findIndex(line => line.length == 0);
+    const grid = lines.slice(0, breakIndex).map(group => group.split(''));
+    const moves = lines.slice(breakIndex + 1).map(group => group.split('')).flat();
+    return [grid, moves];
+}
+
+function day_15_find_robot(grid: string[][]): [number, number] {
+    for (let row = 0; row < grid.length; row++) {
+        for (let col = 0; col < grid[row].length; col++) {
+            if (grid[row][col] === '@') {
+                return [row, col];
+            }
+        }
+    }
+    return [-1, -1];
+}
+
+function day_15_compute_box_gps(grid: string[][]): number {
+    let sum = 0;
+    for (let row = 0; row < grid.length; row++) {
+        for (let col = 0; col < grid[row].length; col++) {
+            if (grid[row][col] === 'O') {
+                sum += row * 100 + col;
+            }
+        }
+    }
+    return sum;
+}
+
+function day_15_shift_boxes_recurse(grid: string[][], row: number, col: number, rowDir: number, colDir: number): boolean {
+
+    let dRow = row + rowDir;
+    let dCol = col + colDir;
+    
+    // blocked
+    if (dRow < 0 || dRow >= grid.length || dCol < 0 || dCol >= grid[dRow].length) {
+        return false;
+    }
+
+    // blocked
+    if (grid[dRow][dCol] === '#') {
+        return false;
+    }
+
+    // continue shifting
+    if (grid[dRow][dCol] === 'O') {
+        day_15_shift_boxes_recurse(grid, dRow, dCol, rowDir, colDir);
+    }
+
+    // empty, shift
+    if (grid[dRow][dCol] === '.') {
+        let tmp = grid[dRow][dCol];
+        grid[dRow][dCol] = grid[row][col];
+        grid[row][col] = tmp;
+        return true;
+    }
+
+    return false;
+}
+
+function day_15_apply_move(grid: string[][], row: number, col: number, move: string): [number, number] {
+
+    let newRow = row;
+    let newCol = col;
+    if (move === '^') {
+        if(day_15_shift_boxes_recurse(grid, row, col, -1, 0)) {
+            newRow = row - 1;
+        }
+    }
+    else if (move === 'v') {
+        if(day_15_shift_boxes_recurse(grid, row, col, 1, 0)) {
+            newRow = row + 1;
+        }
+    }
+    else if (move === '>') {
+        if(day_15_shift_boxes_recurse(grid, row, col, 0, 1)) {
+            newCol = col + 1;
+        }
+    }
+    else if (move === '<') {
+        if(day_15_shift_boxes_recurse(grid, row, col, 0, -1)) {
+            newCol = col - 1;
+        }
+    }
+
+    return [newRow, newCol];
+}
+
+function day_15_1(data: string): number {
+    const [grid, moves] = day_15_parser(data);
+    let [row, col] = day_15_find_robot(grid);
+    
+    for (let move of moves) {
+        [row, col] = day_15_apply_move(grid, row, col, move);
+    }
+
+    for(let row of grid) {
+        console.log(row.join(''));
+    }
+
+    return day_15_compute_box_gps(grid);
+}
 
 class Day14_Robot {
     P_X: number = 0;
@@ -87,10 +190,12 @@ function day_14_2(data: string): number {
     const grid_cols = 101;
 
     let second = 0;
-    for (let second = 0; second < 10; second++) {
+    for (second = 100; second < 125; second++) {
         const grid = Array.from({ length: grid_rows }, () => Array(grid_cols).fill('.'));
         for (let robot of robots) {
-            grid[robot.P_Y][robot.P_X] = '#';
+            robot.D_X = day_14_mod(robot.P_X + (robot.V_X * second), grid_cols);
+            robot.D_Y = day_14_mod(robot.P_Y + (robot.V_Y * second), grid_rows);    
+            grid[robot.D_Y][robot.D_X] = '#';
         }
         console.log(`-------------- Second: ${second}--------------`);
         for (let row of grid) {
@@ -1037,6 +1142,7 @@ function main() {
         '13.1': day_13_1,
         '14.1': day_14_1,
         '14.2': day_14_2,
+        '15.1': day_15_1,
     };
 
     function parseArguments() {
