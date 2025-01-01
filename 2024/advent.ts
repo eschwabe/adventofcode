@@ -1,5 +1,65 @@
 import * as fs from 'fs';
 
+function day_16_parser(data: string): string[][] {
+    return data.split('\n').map(group => group.split(''));
+}
+
+function day_16_find_shortest_path(grid: string[][], startRow: number, startCol: number): number {
+    const numRows = grid.length;
+    const numCols = grid[0].length;
+    const directions = [
+        [-1, 0], // up
+        [0, 1],  // right
+        [1, 0],  // down
+        [0, -1]  // left
+    ];
+
+    const queue: [number, number, number, number][] = []; // [row, col, distance, directionIndex]
+    const visited: number[][] = Array.from({ length: numRows }, () => Array(numCols).fill(Number.MAX_SAFE_INTEGER));
+    let shortestDistance = Number.MAX_SAFE_INTEGER;
+
+    queue.push([startRow, startCol, 0, 1]);
+    visited[startRow][startCol] = 0;
+
+    while (queue.length > 0) {
+        const [currentRow, currentCol, distance, prevDirection] = queue.shift()!;
+
+        for (let i = 0; i < directions.length; i++) {
+            const [dRow, dCol] = directions[i];
+            const newRow = currentRow + dRow;
+            const newCol = currentCol + dCol;
+            const newDistance = distance + 1 + (prevDirection !== i ? 1000 : 0);
+
+            if (newRow >= 0 && newRow < numRows && newCol >= 0 && newCol < numCols ) {
+
+                if (grid[newRow][newCol] === 'E' && newDistance < shortestDistance) {
+                    shortestDistance = newDistance;
+                    continue;
+                }
+
+                if (newDistance > visited[newRow][newCol]) {
+                    continue;
+                }
+
+                if (grid[newRow][newCol] === '.') {
+                    queue.push([newRow, newCol, newDistance, i]);
+                    visited[newRow][newCol] = newDistance;
+                }
+            }
+        }
+    }
+
+    return shortestDistance;
+}
+
+function day_16_1(data: string): number {
+    const grid = day_16_parser(data);
+    let startRow = grid.length - 2;
+    let startCol = 1;
+
+    return day_16_find_shortest_path(grid, startRow, startCol);
+}
+
 function day_15_parser(data: string): [string[][], string[]] {
     const lines = data.split('\n')
     const breakIndex = lines.findIndex(line => line.length == 0);
@@ -1143,6 +1203,7 @@ function main() {
         '14.1': day_14_1,
         '14.2': day_14_2,
         '15.1': day_15_1,
+        '16.1': day_16_1,
     };
 
     function parseArguments() {
