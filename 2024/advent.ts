@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import { exit } from 'process';
 
 function day_25_parser(data: string): [number[][],number[][]]  {
     let keys: number[][] = [];
@@ -57,6 +58,96 @@ function day_25_1(data: string): number {
     }
 
     return keyLockFitCount;
+}
+
+enum Day24_Operator {
+    And,
+    Or,
+    Xor,
+    Bit0,
+    Bit1
+}
+
+class Day24_Node {
+    outputId: string = '';
+    leftInputId: string = '';
+    rightInputId: string = '';
+    operator: Day24_Operator = Day24_Operator.And;
+}
+
+function day_24_parser(data: string): Map<string, Day24_Node> {
+    const nodes = new Map<string, Day24_Node>();
+    const lines = data.split('\n');
+
+    for (let line of lines) {
+        let bitMatch: RegExpMatchArray | null = line.match(/([a-z0-9]+): ([0-1])/);
+        if (bitMatch) {
+            let node = new Day24_Node();
+            node.outputId = bitMatch[1];
+            node.operator = parseInt(bitMatch[2]) === 0 ? Day24_Operator.Bit0 : Day24_Operator.Bit1;
+            nodes.set(node.outputId, node);
+        }
+        let gateMatch: RegExpMatchArray | null = line.match(/([a-z0-9]+) (AND|OR|XOR) ([a-z0-9]+) -> ([a-z0-9]+)/);
+        if (gateMatch) {
+            let node = new Day24_Node();
+            node.leftInputId = gateMatch[1];
+            node.rightInputId = gateMatch[3];
+            node.outputId = gateMatch[4];
+            node.operator = gateMatch[2] === 'AND' ? Day24_Operator.And : gateMatch[2] === 'OR' ? Day24_Operator.Or : Day24_Operator.Xor;
+            nodes.set(node.outputId, node);
+        }
+    }
+
+    return nodes;
+}
+
+function day_24_evaluate(nodes: Map<string, Day24_Node>, nodeId: string): number {
+
+    if (!nodes.has(nodeId)) {
+        console.log(`Node ${nodeId} not found.`);
+        return 0;
+    }
+
+    let node = nodes.get(nodeId)!;
+
+    if (node.operator === Day24_Operator.Bit0) {
+        return 0;
+    }
+    if (node.operator === Day24_Operator.Bit1) {
+        return 1;
+    }
+    if (node.operator === Day24_Operator.And) {
+        return day_24_evaluate(nodes, node.leftInputId) & day_24_evaluate(nodes, node.rightInputId);
+    }
+    if (node.operator === Day24_Operator.Or) {  
+        return day_24_evaluate(nodes, node.leftInputId) | day_24_evaluate(nodes, node.rightInputId);
+    }
+    if (node.operator === Day24_Operator.Xor) {
+        return day_24_evaluate(nodes, node.leftInputId) ^ day_24_evaluate(nodes, node.rightInputId);
+    }
+
+    console.log(`Node ${nodeId} not found. Unknown operator.`);
+    return 0;
+}
+
+function day24_zid(bitPosition: number): string {
+    let prefix = bitPosition < 10 ? 'z0' : 'z';
+    return prefix + bitPosition.toString();
+}
+
+function day_24_1(data: string): number {
+
+    const nodes = day_24_parser(data);
+
+    let bitString = '';
+    let bitPosition = 0;
+
+    while (nodes.has(day24_zid(bitPosition))) {
+        bitString = day_24_evaluate(nodes, day24_zid(bitPosition)).toString() + bitString;
+        bitPosition++;
+    }
+
+    return parseInt(bitString, 2);
 }
 
 function day_16_parser(data: string): string[][] {
@@ -1263,6 +1354,7 @@ function main() {
         '14.2': day_14_2,
         '15.1': day_15_1,
         '16.1': day_16_1,
+        '24.1': day_24_1,
         '25.1': day_25_1,
     };
 
