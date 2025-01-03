@@ -1,5 +1,64 @@
 import * as fs from 'fs';
 
+function day_25_parser(data: string): [number[][],number[][]]  {
+    let keys: number[][] = [];
+    let locks: number[][] = [];
+    
+    const sections = data.split(/\n\s*\n/);
+
+    for (let section of sections) {
+        let lines = section.split('\n');
+        if (lines[0].match(/^#+$/)) {
+            let lock = Array(lines[0].length).fill(0);
+            for (let i = 1; i < lines.length; i++) {
+                for (let j = 0; j < lines[i].length; j++) {
+                    if (lines[i][j] === '#') {
+                        lock[j]++;
+                    }
+                }
+            }
+            locks.push(lock);
+        }
+        else {
+            let key = Array(lines[0].length).fill(0);
+            for (let i = 0; i < lines.length-1; i++) {
+                for (let j = 0; j < lines[i].length; j++) {
+                    if (lines[i][j] === '#') {
+                        key[j]++;
+                    }
+                }
+            }
+            keys.push(key);
+        }
+    }
+
+    return [keys, locks];
+}
+
+function day_25_1(data: string): number {
+
+    const maxPinDepth = 5;
+    let [keys, locks] = day_25_parser(data);
+    let keyLockFitCount = 0;
+
+    for (let key of keys) {
+        for (let lock of locks) {
+            let fit = true;
+            for (let i = 0; i < key.length; i++) {
+                if (key[i] + lock[i] > maxPinDepth) {
+                    fit = false;
+                    break;
+                }
+            }
+            if (fit) {
+                keyLockFitCount++;
+            }
+        }
+    }
+
+    return keyLockFitCount;
+}
+
 function day_16_parser(data: string): string[][] {
     return data.split('\n').map(group => group.split(''));
 }
@@ -1204,6 +1263,7 @@ function main() {
         '14.2': day_14_2,
         '15.1': day_15_1,
         '16.1': day_16_1,
+        '25.1': day_25_1,
     };
 
     function parseArguments() {
