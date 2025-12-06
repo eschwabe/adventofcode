@@ -41,8 +41,25 @@ function day_1_1(data: string): number {
 
 function day_1_2(data: string): number {
     const rotations = day_1_parser(data);
-    // TODO: Implement part 2 when available
-    return 0;
+    let position = 50; // Dial starts at 50
+    let zeroCount = 0;
+    
+    for (const rotation of rotations) {
+        // Count each individual click that passes through or lands on 0
+        for (let i = 0; i < rotation.distance; i++) {
+            if (rotation.direction === 'L') {
+                position = (position - 1 + 100) % 100;
+            } else {
+                position = (position + 1) % 100;
+            }
+            
+            if (position === 0) {
+                zeroCount++;
+            }
+        }
+    }
+    
+    return zeroCount;
 }
 
 // Main runner
