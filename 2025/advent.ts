@@ -209,50 +209,72 @@ function day_3_2(data: string): number {
 }
 
 // Day 4: Printing Department - Accessible Paper Rolls
-function day_4_1(data: string): number {
-    const grid = data.split('\n').map(line => line.split(''));
+const DIRECTIONS = [
+    [-1, -1], [-1, 0], [-1, 1],
+    [0, -1],           [0, 1],
+    [1, -1],  [1, 0],  [1, 1]
+];
+
+function countAdjacentPaper(grid: string[][], row: number, col: number): number {
     const rows = grid.length;
     const cols = grid[0].length;
-    let accessibleCount = 0;
+    let count = 0;
     
-    // Check all 8 adjacent positions for each cell
-    const directions = [
-        [-1, -1], [-1, 0], [-1, 1],
-        [0, -1],           [0, 1],
-        [1, -1],  [1, 0],  [1, 1]
-    ];
+    for (const [dr, dc] of DIRECTIONS) {
+        const newRow = row + dr;
+        const newCol = col + dc;
+        
+        if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols) {
+            if (grid[newRow][newCol] === '@') {
+                count++;
+            }
+        }
+    }
+    return count;
+}
+
+function findAccessiblePaperRolls(grid: string[][]): [number, number][] {
+    const accessible: [number, number][] = [];
+    const rows = grid.length;
+    const cols = grid[0].length;
     
     for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
             if (grid[row][col] === '@') {
-                // Count adjacent paper rolls
-                let adjacentPaperCount = 0;
-                
-                for (const [dr, dc] of directions) {
-                    const newRow = row + dr;
-                    const newCol = col + dc;
-                    
-                    if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols) {
-                        if (grid[newRow][newCol] === '@') {
-                            adjacentPaperCount++;
-                        }
-                    }
-                }
-                
-                // Accessible if fewer than 4 adjacent paper rolls
-                if (adjacentPaperCount < 4) {
-                    accessibleCount++;
+                const adjacentCount = countAdjacentPaper(grid, row, col);
+                if (adjacentCount < 4) {
+                    accessible.push([row, col]);
                 }
             }
         }
     }
     
-    return accessibleCount;
+    return accessible;
+}
+
+function day_4_1(data: string): number {
+    const grid = data.split('\n').map(line => line.split(''));
+    return findAccessiblePaperRolls(grid).length;
 }
 
 function day_4_2(data: string): number {
-    // Part 2 not implemented yet
-    return 0;
+    const grid = data.split('\n').map(line => line.split(''));
+    let totalRemoved = 0;
+    
+    // Keep removing accessible paper rolls until no more can be removed
+    let accessible = findAccessiblePaperRolls(grid);
+    while (accessible.length > 0) {
+        // Remove all accessible paper rolls
+        for (const [row, col] of accessible) {
+            grid[row][col] = '.';
+        }
+        totalRemoved += accessible.length;
+        
+        // Find newly accessible rolls
+        accessible = findAccessiblePaperRolls(grid);
+    }
+    
+    return totalRemoved;
 }
 
 // Main runner
