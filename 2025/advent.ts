@@ -208,6 +208,53 @@ function day_3_2(data: string): number {
     return totalJoltage;
 }
 
+// Day 4: Printing Department - Accessible Paper Rolls
+function day_4_1(data: string): number {
+    const grid = data.split('\n').map(line => line.split(''));
+    const rows = grid.length;
+    const cols = grid[0].length;
+    let accessibleCount = 0;
+    
+    // Check all 8 adjacent positions for each cell
+    const directions = [
+        [-1, -1], [-1, 0], [-1, 1],
+        [0, -1],           [0, 1],
+        [1, -1],  [1, 0],  [1, 1]
+    ];
+    
+    for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+            if (grid[row][col] === '@') {
+                // Count adjacent paper rolls
+                let adjacentPaperCount = 0;
+                
+                for (const [dr, dc] of directions) {
+                    const newRow = row + dr;
+                    const newCol = col + dc;
+                    
+                    if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols) {
+                        if (grid[newRow][newCol] === '@') {
+                            adjacentPaperCount++;
+                        }
+                    }
+                }
+                
+                // Accessible if fewer than 4 adjacent paper rolls
+                if (adjacentPaperCount < 4) {
+                    accessibleCount++;
+                }
+            }
+        }
+    }
+    
+    return accessibleCount;
+}
+
+function day_4_2(data: string): number {
+    // Part 2 not implemented yet
+    return 0;
+}
+
 // Main runner
 const args = process.argv.slice(2);
 if (args.length < 2) {
@@ -232,6 +279,9 @@ try {
             break;
         case 3:
             result = part === 1 ? day_3_1(data) : day_3_2(data);
+            break;
+        case 4:
+            result = part === 1 ? day_4_1(data) : day_4_2(data);
             break;
         // Add more days here as needed
         default:
