@@ -141,6 +141,73 @@ function day_2_2(data: string): number {
     return sum;
 }
 
+// Day 3: Lobby - Battery Banks
+function day_3_parser(data: string): string[] {
+    return data.split('\n').filter(line => line.trim() !== '');
+}
+
+function day_3_1(data: string): number {
+    const banks = day_3_parser(data);
+    let totalJoltage = 0;
+    
+    for (const bank of banks) {
+        let maxJoltage = 0;
+        
+        // Try all pairs of positions (i, j) where i < j
+        for (let i = 0; i < bank.length - 1; i++) {
+            for (let j = i + 1; j < bank.length; j++) {
+                // Form the number by concatenating digits at positions i and j
+                const joltage = parseInt(bank[i] + bank[j]);
+                maxJoltage = Math.max(maxJoltage, joltage);
+            }
+        }
+        
+        totalJoltage += maxJoltage;
+    }
+    
+    return totalJoltage;
+}
+
+function day_3_2(data: string): number {
+    const banks = day_3_parser(data);
+    let totalJoltage = 0;
+    
+    for (const bank of banks) {
+        const batteriesToSelect = 12;
+        
+        // Greedy approach: at each position, select the largest digit that still
+        // leaves enough remaining digits to complete our selection
+        let result = '';
+        let startPos = 0;
+        let remaining = batteriesToSelect;
+        
+        while (remaining > 0) {
+            // We need 'remaining' more digits
+            // We can look ahead up to (bank.length - startPos - remaining) positions
+            const maxLookAhead = bank.length - startPos - remaining + 1;
+            
+            let maxDigit = '0';
+            let maxPos = startPos;
+            
+            // Find the largest digit within our lookahead window
+            for (let i = 0; i < maxLookAhead; i++) {
+                if (bank[startPos + i] > maxDigit) {
+                    maxDigit = bank[startPos + i];
+                    maxPos = startPos + i;
+                }
+            }
+            
+            result += maxDigit;
+            startPos = maxPos + 1;
+            remaining--;
+        }
+        
+        totalJoltage += parseInt(result);
+    }
+    
+    return totalJoltage;
+}
+
 // Main runner
 const args = process.argv.slice(2);
 if (args.length < 2) {
@@ -162,6 +229,9 @@ try {
             break;
         case 2:
             result = part === 1 ? day_2_1(data) : day_2_2(data);
+            break;
+        case 3:
+            result = part === 1 ? day_3_1(data) : day_3_2(data);
             break;
         // Add more days here as needed
         default:
