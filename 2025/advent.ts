@@ -315,7 +315,40 @@ function day_5_1(data: string): number {
 }
 
 function day_5_2(data: string): number {
-    return 0; // Placeholder
+    const { ranges } = day_5_parser(data);
+    
+    // Sort ranges by start position
+    const sortedRanges = [...ranges].sort((a, b) => a.start - b.start);
+    
+    // Merge overlapping ranges
+    const mergedRanges: IngredientRange[] = [];
+    let current = sortedRanges[0];
+    
+    for (let i = 1; i < sortedRanges.length; i++) {
+        const next = sortedRanges[i];
+        
+        // Check if ranges overlap or are adjacent
+        if (next.start <= current.end + 1) {
+            // Merge by extending the end if needed
+            current = {
+                start: current.start,
+                end: Math.max(current.end, next.end)
+            };
+        } else {
+            // No overlap, save current and move to next
+            mergedRanges.push(current);
+            current = next;
+        }
+    }
+    mergedRanges.push(current);
+    
+    // Count total IDs in merged ranges
+    let totalIds = 0;
+    for (const range of mergedRanges) {
+        totalIds += range.end - range.start + 1;
+    }
+    
+    return totalIds;
 }
 
 // Main runner
