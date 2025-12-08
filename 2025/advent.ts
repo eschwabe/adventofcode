@@ -277,6 +277,47 @@ function day_4_2(data: string): number {
     return totalRemoved;
 }
 
+// Day 5: Cafeteria - Fresh Ingredient Checker
+interface IngredientRange {
+    start: number;
+    end: number;
+}
+
+function day_5_parser(data: string): { ranges: IngredientRange[], ingredients: number[] } {
+    const sections = data.split('\n\n');
+    
+    // Parse fresh ingredient ranges
+    const ranges = sections[0].split('\n').map(line => {
+        const [start, end] = line.split('-').map(Number);
+        return { start, end };
+    });
+    
+    // Parse available ingredient IDs
+    const ingredients = sections[1].split('\n').map(Number);
+    
+    return { ranges, ingredients };
+}
+
+function day_5_1(data: string): number {
+    const { ranges, ingredients } = day_5_parser(data);
+    
+    let freshCount = 0;
+    
+    for (const id of ingredients) {
+        // Check if this ingredient ID falls within any fresh range
+        const isFresh = ranges.some(range => id >= range.start && id <= range.end);
+        if (isFresh) {
+            freshCount++;
+        }
+    }
+    
+    return freshCount;
+}
+
+function day_5_2(data: string): number {
+    return 0; // Placeholder
+}
+
 // Main runner
 const args = process.argv.slice(2);
 if (args.length < 2) {
@@ -304,6 +345,9 @@ try {
             break;
         case 4:
             result = part === 1 ? day_4_1(data) : day_4_2(data);
+            break;
+        case 5:
+            result = part === 1 ? day_5_1(data) : day_5_2(data);
             break;
         // Add more days here as needed
         default:
