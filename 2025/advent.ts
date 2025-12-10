@@ -351,6 +351,79 @@ function day_5_2(data: string): number {
     return totalIds;
 }
 
+// Day 6: Trash Compactor - Vertical Math Problems
+function day_6_parser(data: string): { numbers: number[][], operators: string[] } {
+    const lines = data.split('\n');
+    
+    // Last line is operators, all lines before are numbers
+    const numberLines = lines.slice(0, -1);
+    const operatorLine = lines[lines.length - 1];
+    
+    // Split each line by multiple spaces to get columns
+    const numberColumns: string[][] = [];
+    
+    for (const line of numberLines) {
+        // Split by one or more spaces, filtering out empty strings
+        const tokens = line.split(/\s+/).filter(s => s.length > 0);
+        for (let i = 0; i < tokens.length; i++) {
+            if (!numberColumns[i]) {
+                numberColumns[i] = [];
+            }
+            numberColumns[i].push(tokens[i]);
+        }
+    }
+    
+    // Split operator line the same way
+    const operatorTokens = operatorLine.split(/\s+/).filter(s => s.length > 0);
+    
+    // Build problems
+    const problems: number[][] = [];
+    const operators: string[] = [];
+    
+    for (let i = 0; i < operatorTokens.length; i++) {
+        if (i < numberColumns.length) {
+            const column = numberColumns[i];
+            const nums = column.map(s => parseInt(s));
+            if (nums.every(n => !isNaN(n)) && nums.length === numberLines.length) {
+                problems.push(nums);
+                operators.push(operatorTokens[i]);
+            }
+        }
+    }
+    
+    return { numbers: problems, operators };
+}
+
+function day_6_1(data: string): number {
+    const { numbers, operators } = day_6_parser(data);
+    
+    let grandTotal = 0;
+    
+    // Solve each problem
+    for (let i = 0; i < numbers.length; i++) {
+        const problemNumbers = numbers[i];
+        const operator = operators[i];
+        
+        let result: number;
+        if (operator === '+') {
+            result = problemNumbers.reduce((sum, n) => sum + n, 0);
+        } else if (operator === '*') {
+            result = problemNumbers.reduce((product, n) => product * n, 1);
+        } else {
+            throw new Error(`Unknown operator: ${operator}`);
+        }
+        
+        grandTotal += result;
+    }
+    
+    return grandTotal;
+}
+
+function day_6_2(data: string): number {
+    // Placeholder for part 2
+    return 0;
+}
+
 // Main runner
 const args = process.argv.slice(2);
 if (args.length < 2) {
@@ -381,6 +454,9 @@ try {
             break;
         case 5:
             result = part === 1 ? day_5_1(data) : day_5_2(data);
+            break;
+        case 6:
+            result = part === 1 ? day_6_1(data) : day_6_2(data);
             break;
         // Add more days here as needed
         default:
