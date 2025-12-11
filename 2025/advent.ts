@@ -420,8 +420,75 @@ function day_6_1(data: string): number {
 }
 
 function day_6_2(data: string): number {
-    // Placeholder for part 2
-    return 0;
+    const lines = data.split('\n');
+    
+    // Last line is operators, all lines before are numbers/digits
+    const numberLines = lines.slice(0, -1);
+    const operatorLine = lines[lines.length - 1];
+    
+    // Pad all lines to the same length
+    const maxLen = Math.max(...lines.map(l => l.length));
+    const paddedNumberLines = numberLines.map(l => l.padEnd(maxLen));
+    const paddedOperatorLine = operatorLine.padEnd(maxLen);
+    
+    // A column is a "separator" if ALL characters in that column (including operator) are spaces
+    const isSeparatorColumn = (col: number): boolean => {
+        if (paddedOperatorLine[col] !== ' ') return false;
+        for (const line of paddedNumberLines) {
+            if (line[col] !== ' ') return false;
+        }
+        return true;
+    };
+    
+    let grandTotal = 0;
+    let col = maxLen - 1;
+    
+    while (col >= 0) {
+        // Skip separator columns
+        while (col >= 0 && isSeparatorColumn(col)) {
+            col--;
+        }
+        if (col < 0) break;
+        
+        // Found a problem - collect all columns until we hit a separator
+        const numbers: number[] = [];
+        let operator = '+';
+        
+        while (col >= 0 && !isSeparatorColumn(col)) {
+            // Get operator from this column if present
+            if (paddedOperatorLine[col] !== ' ') {
+                operator = paddedOperatorLine[col];
+            }
+            
+            // Build a number from this column by reading digits top to bottom
+            let digitStr = '';
+            for (const line of paddedNumberLines) {
+                const ch = line[col];
+                if (ch !== ' ') {
+                    digitStr += ch;
+                }
+            }
+            
+            if (digitStr.length > 0) {
+                numbers.push(parseInt(digitStr));
+            }
+            col--;
+        }
+        
+        // Calculate result based on operator
+        let result: number;
+        if (operator === '+') {
+            result = numbers.reduce((sum, n) => sum + n, 0);
+        } else if (operator === '*') {
+            result = numbers.reduce((product, n) => product * n, 1);
+        } else {
+            throw new Error(`Unknown operator: ${operator}`);
+        }
+        
+        grandTotal += result;
+    }
+    
+    return grandTotal;
 }
 
 // Main runner
