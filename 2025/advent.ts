@@ -491,6 +491,67 @@ function day_6_2(data: string): number {
     return grandTotal;
 }
 
+// Day 7: Laboratories - Tachyon Manifold
+function day_7_parser(data: string): string[] {
+    return data.split('\n');
+}
+
+function day_7_1(data: string): number {
+    const grid = day_7_parser(data);
+    const rows = grid.length;
+    const cols = grid[0].length;
+    
+    // Find starting position (S)
+    let startCol = -1;
+    for (let col = 0; col < cols; col++) {
+        if (grid[0][col] === 'S') {
+            startCol = col;
+            break;
+        }
+    }
+    
+    if (startCol === -1) {
+        throw new Error("Could not find starting position 'S'");
+    }
+    
+    let splitCount = 0;
+    
+    // Use a set to track active beam columns at each row
+    // Start with one beam at the starting column, row 1 (below S)
+    let activeBeams = new Set<number>();
+    activeBeams.add(startCol);
+    
+    // Process row by row starting from row 1
+    for (let row = 1; row < rows && activeBeams.size > 0; row++) {
+        const newBeams = new Set<number>();
+        
+        for (const col of activeBeams) {
+            const cell = grid[row][col];
+            
+            if (cell === '^') {
+                // Beam hits a splitter - count the split and create two new beams
+                splitCount++;
+                // Left beam (if in bounds)
+                if (col - 1 >= 0) {
+                    newBeams.add(col - 1);
+                }
+                // Right beam (if in bounds)
+                if (col + 1 < cols) {
+                    newBeams.add(col + 1);
+                }
+            } else if (cell === '.') {
+                // Beam passes through empty space
+                newBeams.add(col);
+            }
+            // If cell is something else (including S), beam stops
+        }
+        
+        activeBeams = newBeams;
+    }
+    
+    return splitCount;
+}
+
 // Main runner
 const args = process.argv.slice(2);
 if (args.length < 2) {
@@ -524,6 +585,9 @@ try {
             break;
         case 6:
             result = part === 1 ? day_6_1(data) : day_6_2(data);
+            break;
+        case 7:
+            result = part === 1 ? day_7_1(data) : day_7_1(data); // Part 2 TBD
             break;
         // Add more days here as needed
         default:
