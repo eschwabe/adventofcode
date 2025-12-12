@@ -552,6 +552,65 @@ function day_7_1(data: string): number {
     return splitCount;
 }
 
+function day_7_2(data: string): number {
+    const grid = day_7_parser(data);
+    const rows = grid.length;
+    const cols = grid[0].length;
+    
+    // Find starting position (S)
+    let startCol = -1;
+    for (let col = 0; col < cols; col++) {
+        if (grid[0][col] === 'S') {
+            startCol = col;
+            break;
+        }
+    }
+    
+    if (startCol === -1) {
+        throw new Error("Could not find starting position 'S'");
+    }
+    
+    // Track number of timelines at each column position
+    // Key: column, Value: number of timelines at that position
+    let timelineCounts = new Map<number, number>();
+    timelineCounts.set(startCol, 1);
+    
+    // Process row by row starting from row 1
+    for (let row = 1; row < rows && timelineCounts.size > 0; row++) {
+        const newCounts = new Map<number, number>();
+        
+        for (const [col, count] of timelineCounts) {
+            const cell = grid[row][col];
+            
+            if (cell === '^') {
+                // Beam hits a splitter - each timeline splits into two
+                // Left beam (if in bounds)
+                if (col - 1 >= 0) {
+                    newCounts.set(col - 1, (newCounts.get(col - 1) || 0) + count);
+                }
+                // Right beam (if in bounds)
+                if (col + 1 < cols) {
+                    newCounts.set(col + 1, (newCounts.get(col + 1) || 0) + count);
+                }
+            } else if (cell === '.') {
+                // Beam passes through empty space - timelines continue
+                newCounts.set(col, (newCounts.get(col) || 0) + count);
+            }
+            // If cell is something else, beam stops (timelines end)
+        }
+        
+        timelineCounts = newCounts;
+    }
+    
+    // Sum all remaining timelines
+    let totalTimelines = 0;
+    for (const count of timelineCounts.values()) {
+        totalTimelines += count;
+    }
+    
+    return totalTimelines;
+}
+
 // Main runner
 const args = process.argv.slice(2);
 if (args.length < 2) {
@@ -587,7 +646,7 @@ try {
             result = part === 1 ? day_6_1(data) : day_6_2(data);
             break;
         case 7:
-            result = part === 1 ? day_7_1(data) : day_7_1(data); // Part 2 TBD
+            result = part === 1 ? day_7_1(data) : day_7_2(data);
             break;
         // Add more days here as needed
         default:
