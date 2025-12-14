@@ -729,6 +729,44 @@ function day_8_1(data: string, numConnections: number = 1000): number {
     return circuitSizes[0] * circuitSizes[1] * circuitSizes[2];
 }
 
+function day_8_2(data: string): number {
+    const boxes = day_8_parser(data);
+    const n = boxes.length;
+    
+    // Calculate all pairwise distances
+    const pairs: { i: number; j: number; distSq: number }[] = [];
+    for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+            pairs.push({
+                i,
+                j,
+                distSq: euclideanDistanceSquared(boxes[i], boxes[j])
+            });
+        }
+    }
+    
+    // Sort by distance
+    pairs.sort((a, b) => a.distSq - b.distSq);
+    
+    // Connect pairs until all boxes are in one circuit
+    const uf = new UnionFind(n);
+    let numCircuits = n; // Start with n circuits (each box is its own circuit)
+    
+    for (const pair of pairs) {
+        // Try to connect - union returns true if they were in different circuits
+        if (uf.union(pair.i, pair.j)) {
+            numCircuits--;
+            
+            // If we just connected the last two circuits, this is the answer
+            if (numCircuits === 1) {
+                return boxes[pair.i].x * boxes[pair.j].x;
+            }
+        }
+    }
+    
+    throw new Error("Failed to connect all boxes into one circuit");
+}
+
 // Main runner
 const args = process.argv.slice(2);
 if (args.length < 2) {
@@ -767,7 +805,7 @@ try {
             result = part === 1 ? day_7_1(data) : day_7_2(data);
             break;
         case 8:
-            result = part === 1 ? day_8_1(data) : day_8_1(data); // Part 2 TBD
+            result = part === 1 ? day_8_1(data) : day_8_2(data);
             break;
         // Add more days here as needed
         default:
