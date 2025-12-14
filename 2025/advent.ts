@@ -611,6 +611,124 @@ function day_7_2(data: string): number {
     return totalTimelines;
 }
 
+// Day 8: Playground - Junction Boxes
+interface JunctionBox {
+    x: number;
+    y: number;
+    z: number;
+    index: number;
+}
+
+function day_8_parser(data: string): JunctionBox[] {
+    return data.split('\n').map((line, index) => {
+        const [x, y, z] = line.split(',').map(Number);
+        return { x, y, z, index };
+    });
+}
+
+// Union-Find data structure
+class UnionFind {
+    parent: number[];
+    rank: number[];
+    size: number[];
+    
+    constructor(n: number) {
+        this.parent = Array.from({ length: n }, (_, i) => i);
+        this.rank = new Array(n).fill(0);
+        this.size = new Array(n).fill(1);
+    }
+    
+    find(x: number): number {
+        if (this.parent[x] !== x) {
+            this.parent[x] = this.find(this.parent[x]); // Path compression
+        }
+        return this.parent[x];
+    }
+    
+    union(x: number, y: number): boolean {
+        const rootX = this.find(x);
+        const rootY = this.find(y);
+        
+        if (rootX === rootY) {
+            return false; // Already in same circuit
+        }
+        
+        // Union by rank
+        if (this.rank[rootX] < this.rank[rootY]) {
+            this.parent[rootX] = rootY;
+            this.size[rootY] += this.size[rootX];
+        } else if (this.rank[rootX] > this.rank[rootY]) {
+            this.parent[rootY] = rootX;
+            this.size[rootX] += this.size[rootY];
+        } else {
+            this.parent[rootY] = rootX;
+            this.size[rootX] += this.size[rootY];
+            this.rank[rootX]++;
+        }
+        
+        return true;
+    }
+    
+    getSize(x: number): number {
+        return this.size[this.find(x)];
+    }
+}
+
+function euclideanDistanceSquared(a: JunctionBox, b: JunctionBox): number {
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
+    const dz = a.z - b.z;
+    return dx * dx + dy * dy + dz * dz;
+}
+
+function day_8_1(data: string, numConnections: number = 1000): number {
+    const boxes = day_8_parser(data);
+    const n = boxes.length;
+    
+    // Calculate all pairwise distances
+    const pairs: { i: number; j: number; distSq: number }[] = [];
+    for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+            pairs.push({
+                i,
+                j,
+                distSq: euclideanDistanceSquared(boxes[i], boxes[j])
+            });
+        }
+    }
+    
+    // Sort by distance
+    pairs.sort((a, b) => a.distSq - b.distSq);
+    
+    // Connect the specified number of closest pairs using Union-Find
+    const uf = new UnionFind(n);
+    let connectionsUsed = 0;
+    
+    for (const pair of pairs) {
+        if (connectionsUsed >= numConnections) break;
+        
+        // Try to connect - union returns false if already in same circuit
+        uf.union(pair.i, pair.j);
+        connectionsUsed++;
+    }
+    
+    // Find all unique circuit sizes
+    const circuitSizes: number[] = [];
+    const seen = new Set<number>();
+    for (let i = 0; i < n; i++) {
+        const root = uf.find(i);
+        if (!seen.has(root)) {
+            seen.add(root);
+            circuitSizes.push(uf.getSize(root));
+        }
+    }
+    
+    // Sort descending and take top 3
+    circuitSizes.sort((a, b) => b - a);
+    
+    return circuitSizes[0] * circuitSizes[1] * circuitSizes[2];
+}
+
 // Main runner
 const args = process.argv.slice(2);
 if (args.length < 2) {
@@ -647,6 +765,9 @@ try {
             break;
         case 7:
             result = part === 1 ? day_7_1(data) : day_7_2(data);
+            break;
+        case 8:
+            result = part === 1 ? day_8_1(data) : day_8_1(data); // Part 2 TBD
             break;
         // Add more days here as needed
         default:
