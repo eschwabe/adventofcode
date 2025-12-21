@@ -798,6 +798,170 @@ function day_9_1(data: string): number {
     return maxArea;
 }
 
+function day_9_2(data: string): number {
+    const redTiles = day_9_parser(data);
+    
+    // Build polygon edges (segments between consecutive red tiles)
+    interface Segment {
+        x1: number; y1: number;
+        x2: number; y2: number;
+        horizontal: boolean;
+    }
+    
+    const segments: Segment[] = [];
+    const horizontalSegments: Segment[] = [];
+    const verticalSegments: Segment[] = [];
+    
+    for (let i = 0; i < redTiles.length; i++) {
+        const t1 = redTiles[i];
+        const t2 = redTiles[(i + 1) % redTiles.length];
+        const seg = {
+            x1: Math.min(t1.x, t2.x),
+            y1: Math.min(t1.y, t2.y),
+            x2: Math.max(t1.x, t2.x),
+            y2: Math.max(t1.y, t2.y),
+            horizontal: t1.y === t2.y
+        };
+        segments.push(seg);
+        if (seg.horizontal) {
+            horizontalSegments.push(seg);
+        } else {
+            verticalSegments.push(seg);
+        }
+    }
+    
+    // Sort segments for faster lookup
+    horizontalSegments.sort((a, b) => a.y1 - b.y1 || a.x1 - b.x1);
+    verticalSegments.sort((a, b) => a.x1 - b.x1 || a.y1 - b.y1);
+    
+    // Check if a point is on the polygon boundary
+    function isOnBoundary(px: number, py: number): boolean {
+        for (const seg of segments) {
+            if (seg.horizontal) {
+                if (py === seg.y1 && px >= seg.x1 && px <= seg.x2) return true;
+            } else {
+                if (px === seg.x1 && py >= seg.y1 && py <= seg.y2) return true;
+            }
+        }
+        return false;
+    }
+    
+    // Check if a point is inside the polygon (not on boundary) using ray casting
+    function isStrictlyInside(px: number, py: number): boolean {
+        if (isOnBoundary(px, py)) return false;
+        
+        // Count crossings of horizontal segments above this point
+        let crossings = 0;
+        for (const seg of horizontalSegments) {
+            if (seg.y1 > py && px >= seg.x1 && px < seg.x2) {
+                crossings++;
+            }
+        }
+        return crossings % 2 === 1;
+    }
+    
+    // Check if a horizontal line segment from (x1,y) to (x2,y) is inside or on boundary
+    function isHorizontalSegmentValid(x1: number, x2: number, y: number): boolean {
+        // Check if entire segment lies on boundary or inside
+        // Find all x-coordinates where the status might change (polygon vertices and crossings)
+        const criticalX = new Set<number>([x1, x2]);
+        
+        for (const seg of segments) {
+            if (seg.horizontal && seg.y1 === y) {
+                // Horizontal segment at same y - add its endpoints
+                if (seg.x1 >= x1 && seg.x1 <= x2) criticalX.add(seg.x1);
+                if (seg.x2 >= x1 && seg.x2 <= x2) criticalX.add(seg.x2);
+            } else if (!seg.horizontal) {
+                // Vertical segment - add x if it's within our range and the segment spans our y
+                if (seg.x1 >= x1 && seg.x1 <= x2 && y >= seg.y1 && y <= seg.y2) {
+                    criticalX.add(seg.x1);
+                }
+            }
+        }
+        
+        const sortedX = Array.from(criticalX).sort((a, b) => a - b);
+        
+        // Check midpoints of each interval
+        for (let i = 0; i < sortedX.length - 1; i++) {
+            const midX = (sortedX[i] + sortedX[i + 1]) / 2;
+            if (!isOnBoundary(midX, y) && !isStrictlyInside(midX, y)) {
+                return false;
+            }
+        }
+        
+        // Check all critical points
+        for (const x of sortedX) {
+            if (!isOnBoundary(x, y) && !isStrictlyInside(x, y)) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    // Check if a vertical line segment is valid
+    function isVerticalSegmentValid(x: number, y1: number, y2: number): boolean {
+        const criticalY = new Set<number>([y1, y2]);
+        
+        for (const seg of segments) {
+            if (!seg.horizontal && seg.x1 === x) {
+                if (seg.y1 >= y1 && seg.y1 <= y2) criticalY.add(seg.y1);
+                if (seg.y2 >= y1 && seg.y2 <= y2) criticalY.add(seg.y2);
+            } else if (seg.horizontal) {
+                if (seg.y1 >= y1 && seg.y1 <= y2 && x >= seg.x1 && x <= seg.x2) {
+                    criticalY.add(seg.y1);
+                }
+            }
+        }
+        
+        const sortedY = Array.from(criticalY).sort((a, b) => a - b);
+        
+        for (let i = 0; i < sortedY.length - 1; i++) {
+            const midY = (sortedY[i] + sortedY[i + 1]) / 2;
+            if (!isOnBoundary(x, midY) && !isStrictlyInside(x, midY)) {
+                return false;
+            }
+        }
+        
+        for (const y of sortedY) {
+            if (!isOnBoundary(x, y) && !isStrictlyInside(x, y)) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    // Check all pairs of red tiles as opposite corners
+    let maxArea = 0;
+    for (let i = 0; i < redTiles.length; i++) {
+        for (let j = i + 1; j < redTiles.length; j++) {
+            const t1 = redTiles[i];
+            const t2 = redTiles[j];
+            
+            const x1 = Math.min(t1.x, t2.x);
+            const x2 = Math.max(t1.x, t2.x);
+            const y1 = Math.min(t1.y, t2.y);
+            const y2 = Math.max(t1.y, t2.y);
+            
+            const area = (x2 - x1 + 1) * (y2 - y1 + 1);
+            
+            // Skip if area can't beat current max
+            if (area <= maxArea) continue;
+            
+            // Check all 4 edges of the rectangle
+            if (isHorizontalSegmentValid(x1, x2, y1) &&
+                isHorizontalSegmentValid(x1, x2, y2) &&
+                isVerticalSegmentValid(x1, y1, y2) &&
+                isVerticalSegmentValid(x2, y1, y2)) {
+                maxArea = area;
+            }
+        }
+    }
+    
+    return maxArea;
+}
+
 // Main runner
 const args = process.argv.slice(2);
 if (args.length < 2) {
@@ -839,7 +1003,7 @@ try {
             result = part === 1 ? day_8_1(data) : day_8_2(data);
             break;
         case 9:
-            result = part === 1 ? day_9_1(data) : day_9_1(data); // Part 2 TBD
+            result = part === 1 ? day_9_1(data) : day_9_2(data);
             break;
         // Add more days here as needed
         default:
