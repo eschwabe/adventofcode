@@ -962,6 +962,110 @@ function day_9_2(data: string): number {
     return maxArea;
 }
 
+// Day 10: Factory - Indicator Light Configuration
+interface Machine {
+    lights: boolean[];  // Target configuration
+    buttons: number[][]; // Each button lists indices it toggles
+}
+
+function day_10_parser(data: string): Machine[] {
+    const lines = data.split('\n');
+    const machines: Machine[] = [];
+    
+    for (const line of lines) {
+        if (!line.trim()) continue;
+        
+        // Parse indicator light diagram [.##.]
+        const lightMatch = line.match(/\[([.#]+)\]/);
+        if (!lightMatch) continue;
+        
+        const lights = lightMatch[1].split('').map(c => c === '#');
+        
+        // Parse all button wiring schematics (0,2,3) etc.
+        const buttonMatches = line.matchAll(/\(([0-9,]+)\)/g);
+        const buttons: number[][] = [];
+        for (const match of buttonMatches) {
+            buttons.push(match[1].split(',').map(n => parseInt(n)));
+        }
+        
+        machines.push({ lights, buttons });
+    }
+    
+    return machines;
+}
+
+function findMinPresses(machine: Machine): number {
+    const numLights = machine.lights.length;
+    const numButtons = machine.buttons.length;
+    const target = machine.lights.map(l => l ? 1 : 0);
+    
+    // We need to find the minimum number of button presses to achieve target state
+    // Each button can be pressed 0 or 1 times (since pressing twice cancels out)
+    // This is a system of linear equations over GF(2)
+    
+    // For small inputs, we can brute force all 2^numButtons combinations
+    // But for efficiency, let's use Gaussian elimination to find if solution exists
+    // and the minimum weight solution
+    
+    if (numButtons <= 20) {
+        // Brute force for small cases
+        let minPresses = Infinity;
+        
+        for (let mask = 0; mask < (1 << numButtons); mask++) {
+            const state = new Array(numLights).fill(0);
+            let presses = 0;
+            
+            for (let b = 0; b < numButtons; b++) {
+                if (mask & (1 << b)) {
+                    presses++;
+                    for (const idx of machine.buttons[b]) {
+                        state[idx] ^= 1;
+                    }
+                }
+            }
+            
+            // Check if state matches target
+            let matches = true;
+            for (let i = 0; i < numLights; i++) {
+                if (state[i] !== target[i]) {
+                    matches = false;
+                    break;
+                }
+            }
+            
+            if (matches) {
+                minPresses = Math.min(minPresses, presses);
+            }
+        }
+        
+        return minPresses === Infinity ? -1 : minPresses;
+    }
+    
+    // For larger cases, use Gaussian elimination with minimum weight
+    // This is more complex - implement if needed
+    return -1;
+}
+
+function day_10_1(data: string): number {
+    const machines = day_10_parser(data);
+    let total = 0;
+    
+    for (const machine of machines) {
+        const minPresses = findMinPresses(machine);
+        if (minPresses === -1) {
+            throw new Error("No solution found for machine");
+        }
+        total += minPresses;
+    }
+    
+    return total;
+}
+
+function day_10_2(data: string): number {
+    // Placeholder for part 2
+    return 0;
+}
+
 // Main runner
 const args = process.argv.slice(2);
 if (args.length < 2) {
@@ -1004,6 +1108,9 @@ try {
             break;
         case 9:
             result = part === 1 ? day_9_1(data) : day_9_2(data);
+            break;
+        case 10:
+            result = part === 1 ? day_10_1(data) : day_10_2(data);
             break;
         // Add more days here as needed
         default:
