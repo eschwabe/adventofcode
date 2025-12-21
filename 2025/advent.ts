@@ -767,6 +767,37 @@ function day_8_2(data: string): number {
     throw new Error("Failed to connect all boxes into one circuit");
 }
 
+// Day 9: Movie Theater - Largest Rectangle from Red Tiles
+interface RedTile {
+    x: number;
+    y: number;
+}
+
+function day_9_parser(data: string): RedTile[] {
+    return data.split('\n').map(line => {
+        const [x, y] = line.split(',').map(n => parseInt(n));
+        return { x, y };
+    });
+}
+
+function day_9_1(data: string): number {
+    const tiles = day_9_parser(data);
+    let maxArea = 0;
+    
+    // Check all pairs of red tiles as opposite corners
+    // The rectangle includes the tiles themselves, so add 1 to each dimension
+    for (let i = 0; i < tiles.length; i++) {
+        for (let j = i + 1; j < tiles.length; j++) {
+            const width = Math.abs(tiles[j].x - tiles[i].x) + 1;
+            const height = Math.abs(tiles[j].y - tiles[i].y) + 1;
+            const area = width * height;
+            maxArea = Math.max(maxArea, area);
+        }
+    }
+    
+    return maxArea;
+}
+
 // Main runner
 const args = process.argv.slice(2);
 if (args.length < 2) {
@@ -806,6 +837,9 @@ try {
             break;
         case 8:
             result = part === 1 ? day_8_1(data) : day_8_2(data);
+            break;
+        case 9:
+            result = part === 1 ? day_9_1(data) : day_9_1(data); // Part 2 TBD
             break;
         // Add more days here as needed
         default:
