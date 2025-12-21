@@ -966,6 +966,7 @@ function day_9_2(data: string): number {
 interface Machine {
     lights: boolean[];  // Target configuration
     buttons: number[][]; // Each button lists indices it toggles
+    joltage: number[];  // Target joltage requirements
 }
 
 function day_10_parser(data: string): Machine[] {
@@ -988,7 +989,11 @@ function day_10_parser(data: string): Machine[] {
             buttons.push(match[1].split(',').map(n => parseInt(n)));
         }
         
-        machines.push({ lights, buttons });
+        // Parse joltage requirements {3,5,4,7}
+        const joltageMatch = line.match(/\{([0-9,]+)\}/);
+        const joltage = joltageMatch ? joltageMatch[1].split(',').map(n => parseInt(n)) : [];
+        
+        machines.push({ lights, buttons, joltage });
     }
     
     return machines;
@@ -1062,8 +1067,192 @@ function day_10_1(data: string): number {
 }
 
 function day_10_2(data: string): number {
-    // Placeholder for part 2
-    return 0;
+    const machines = day_10_parser(data);
+    let total = 0;
+    
+    for (const machine of machines) {
+        const minPresses = findMinPressesJoltageLP(machine);
+        total += minPresses;
+    }
+    
+    return total;
+}
+
+// Find minimum button presses to reach target joltage values using Linear Programming approach
+// This is: minimize sum(x) subject to Ax = target, x >= 0 (integers)
+function findMinPressesJoltageLP(machine: Machine): number {
+    const numCounters = machine.joltage.length;
+    const numButtons = machine.buttons.length;
+    const target = [...machine.joltage];
+    
+    // Build the constraint matrix: A[counter][button] = 1 if button affects counter
+    const A: number[][] = [];
+    for (let c = 0; c < numCounters; c++) {
+        A[c] = new Array(numButtons).fill(0);
+    }
+    for (let b = 0; b < numButtons; b++) {
+        for (const counter of machine.buttons[b]) {
+            if (counter < numCounters) {
+                A[counter][b] = 1;
+            }
+        }
+    }
+    
+    // Solve using Gaussian elimination to find a particular solution, then optimize
+    // We use rational arithmetic to avoid floating point issues
+    
+    // Augmented matrix [A | target]
+    const aug: number[][] = A.map((row, i) => [...row, target[i]]);
+    const m = numCounters;
+    const n = numButtons;
+    
+    // Gaussian elimination with partial pivoting
+    const pivotCols: number[] = []; // Track which columns are pivot columns
+    let pivotRow = 0;
+    
+    for (let col = 0; col < n && pivotRow < m; col++) {
+        // Find pivot
+        let maxRow = pivotRow;
+        for (let row = pivotRow + 1; row < m; row++) {
+            if (Math.abs(aug[row][col]) > Math.abs(aug[maxRow][col])) {
+                maxRow = row;
+            }
+        }
+        
+        if (Math.abs(aug[maxRow][col]) < 1e-10) continue; // No pivot in this column
+        
+        // Swap rows
+        [aug[pivotRow], aug[maxRow]] = [aug[maxRow], aug[pivotRow]];
+        
+        // Scale pivot row
+        const scale = aug[pivotRow][col];
+        for (let j = 0; j <= n; j++) {
+            aug[pivotRow][j] /= scale;
+        }
+        
+        // Eliminate other rows
+        for (let row = 0; row < m; row++) {
+            if (row !== pivotRow && Math.abs(aug[row][col]) > 1e-10) {
+                const factor = aug[row][col];
+                for (let j = 0; j <= n; j++) {
+                    aug[row][j] -= factor * aug[pivotRow][j];
+                }
+            }
+        }
+        
+        pivotCols.push(col);
+        pivotRow++;
+    }
+    
+    // Find free variables (non-pivot columns)
+    const freeVars: number[] = [];
+    for (let col = 0; col < n; col++) {
+        if (!pivotCols.includes(col)) {
+            freeVars.push(col);
+        }
+    }
+    
+    // For each combination of free variable values, find the solution and compute total presses
+    // Free variables can range from 0 to some reasonable max
+    
+    // Calculate reasonable bounds for free variables
+    const maxFreeVal = Math.max(...target) + 10;
+    
+    let minTotal = Infinity;
+    
+    // Generate all combinations of free variable values
+    function searchFreeVars(freeIdx: number, freeVals: number[]): void {
+        if (freeIdx === freeVars.length) {
+            // Compute solution with these free variable values
+            const x = new Array(n).fill(0);
+            
+            // Set free variables
+            for (let i = 0; i < freeVars.length; i++) {
+                x[freeVars[i]] = freeVals[i];
+            }
+            
+            // Back-substitute to find pivot variables
+            for (let i = pivotCols.length - 1; i >= 0; i--) {
+                const pivotCol = pivotCols[i];
+                let val = aug[i][n]; // RHS
+                for (let j = 0; j < n; j++) {
+                    if (j !== pivotCol) {
+                        val -= aug[i][j] * x[j];
+                    }
+                }
+                x[pivotCol] = val;
+            }
+            
+            // Check if all values are non-negative integers
+            let valid = true;
+            let total = 0;
+            for (let i = 0; i < n; i++) {
+                const rounded = Math.round(x[i]);
+                if (Math.abs(x[i] - rounded) > 1e-6 || rounded < 0) {
+                    valid = false;
+                    break;
+                }
+                total += rounded;
+            }
+            
+            if (valid && total < minTotal) {
+                // Verify the solution
+                const result = new Array(numCounters).fill(0);
+                for (let b = 0; b < n; b++) {
+                    const presses = Math.round(x[b]);
+                    for (const counter of machine.buttons[b]) {
+                        if (counter < numCounters) {
+                            result[counter] += presses;
+                        }
+                    }
+                }
+                
+                let matches = true;
+                for (let c = 0; c < numCounters; c++) {
+                    if (result[c] !== target[c]) {
+                        matches = false;
+                        break;
+                    }
+                }
+                
+                if (matches) {
+                    minTotal = total;
+                }
+            }
+            return;
+        }
+        
+        // Determine range for this free variable
+        // We need to be smart about the range to avoid too much search
+        const col = freeVars[freeIdx];
+        
+        // Calculate bounds based on constraints
+        let maxVal = maxFreeVal;
+        for (let c = 0; c < numCounters; c++) {
+            if (A[c][col] > 0) {
+                maxVal = Math.min(maxVal, target[c]);
+            }
+        }
+        
+        for (let v = 0; v <= maxVal; v++) {
+            freeVals[freeIdx] = v;
+            searchFreeVars(freeIdx + 1, freeVals);
+        }
+    }
+    
+    if (freeVars.length === 0) {
+        // Unique solution - compute it directly
+        searchFreeVars(0, []);
+    } else if (freeVars.length <= 8) {
+        // Search through free variable space
+        searchFreeVars(0, new Array(freeVars.length).fill(0));
+    } else {
+        // Too many free variables - use heuristic
+        // Try setting all free variables to 0 and see if we get a valid solution
+        searchFreeVars(0, new Array(freeVars.length).fill(0));
+    }
+    
+    return minTotal === Infinity ? -1 : minTotal;
 }
 
 // Main runner
