@@ -1262,6 +1262,11 @@ interface Device {
     connectedTo: Device[];
 }
 
+interface PathState {
+    requiredDevicesFound: Set<string>;
+    cache: Map<string, number>;
+}
+
 function day_11_parser(data: string): Map<string, Device> {
 
     let devices = data.split('\n').map(line => {
@@ -1290,16 +1295,31 @@ function day_11_parser(data: string): Map<string, Device> {
     return deviceMap;
 }
 
-function day_11_traverse(currentDevice: Device): number {
+function day_11_traverse(currentDevice: Device, requiredDevices: string[], state: PathState): number {
+
+    if (state.cache.has(currentDevice.id + '|' + Array.from(state.requiredDevicesFound).sort().join(','))) {
+        return state.cache.get(currentDevice.id + '|' + Array.from(state.requiredDevicesFound).sort().join(','))!;
+    }
 
     if (currentDevice.id === 'out') {
-        return 1;
+        if (requiredDevices.every(deviceId => state.requiredDevicesFound.has(deviceId))) {
+            return 1;
+        } else {
+            return 0;
+        }
     }
 
     let pathCount = 0;
-    for (const nextDevice of currentDevice.connectedTo) {
-        pathCount += day_11_traverse(nextDevice);
+    let newState = { ...state };
+    if (requiredDevices.includes(currentDevice.id)) {
+        newState.requiredDevicesFound = new Set(newState.requiredDevicesFound);
+        newState.requiredDevicesFound.add(currentDevice.id);
     }
+    for (const nextDevice of currentDevice.connectedTo) {
+        pathCount += day_11_traverse(nextDevice, requiredDevices, newState);
+    }
+
+    state.cache.set(currentDevice.id + '|' + Array.from(state.requiredDevicesFound).sort().join(','), pathCount);
 
     return pathCount;
 }
@@ -1307,11 +1327,13 @@ function day_11_traverse(currentDevice: Device): number {
 function day_11_1(data: string): number {
     const deviceMap = day_11_parser(data);
     const startDevice = deviceMap.get('you')!;
-    return day_11_traverse(startDevice);
+    return day_11_traverse(startDevice, [], { requiredDevicesFound: new Set(), cache: new Map() });
 }
 
 function day_11_2(data: string): number {
-    return 0;
+    const deviceMap = day_11_parser(data);
+    const startDevice = deviceMap.get('svr')!;
+    return day_11_traverse(startDevice, ['dac', 'fft'], { requiredDevicesFound: new Set(), cache: new Map() });
 }
 
 
