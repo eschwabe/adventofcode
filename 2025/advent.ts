@@ -1255,6 +1255,66 @@ function findMinPressesJoltageLP(machine: Machine): number {
     return minTotal === Infinity ? -1 : minTotal;
 }
 
+// Day 11: Reactor
+interface Device {
+    id: string;
+    connectedList: string[];
+    connectedTo: Device[];
+}
+
+function day_11_parser(data: string): Map<string, Device> {
+
+    let devices = data.split('\n').map(line => {
+        const [id, connections] = line.split(':').map(s => s.trim());
+        const device: Device = { id, connectedList: connections ? connections.split(' ').map(s => s.trim()) : [], connectedTo: [] };
+        return device;
+    });
+
+    // Insert endpoint device
+    devices.push({ id: 'out', connectedList: [], connectedTo: [] });
+
+    const deviceMap: Map<string, Device> = new Map();
+    for (const device of devices) {
+        deviceMap.set(device.id, device);
+    }
+
+    // Resolve connections
+    for (const device of devices) {
+        for (const connId of device.connectedList) {
+            if (deviceMap.has(connId)) {
+                device.connectedTo.push(deviceMap.get(connId)!);
+            }
+        }
+    }
+
+    return deviceMap;
+}
+
+function day_11_traverse(currentDevice: Device): number {
+
+    if (currentDevice.id === 'out') {
+        return 1;
+    }
+
+    let pathCount = 0;
+    for (const nextDevice of currentDevice.connectedTo) {
+        pathCount += day_11_traverse(nextDevice);
+    }
+
+    return pathCount;
+}
+
+function day_11_1(data: string): number {
+    const deviceMap = day_11_parser(data);
+    const startDevice = deviceMap.get('you')!;
+    return day_11_traverse(startDevice);
+}
+
+function day_11_2(data: string): number {
+    return 0;
+}
+
+
 // Main runner
 const args = process.argv.slice(2);
 if (args.length < 2) {
@@ -1300,6 +1360,9 @@ try {
             break;
         case 10:
             result = part === 1 ? day_10_1(data) : day_10_2(data);
+            break;
+        case 11:
+            result = part === 1 ? day_11_1(data) : day_11_2(data);
             break;
         // Add more days here as needed
         default:
