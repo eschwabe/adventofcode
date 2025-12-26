@@ -1348,7 +1348,7 @@ interface Region {
     counts: number[];  // Count of each shape (indices 0-5) needed
 }
 
-function day_12_parser(data: string): { shapes: Shape[][], regions: Region[] } {
+function day_12_parser(data: string): { shapes: Shape[], regions: Region[] } {
     const lines = data.split('\n');
     
     // Find where regions start (line matching NxN: pattern)
@@ -1359,7 +1359,7 @@ function day_12_parser(data: string): { shapes: Shape[][], regions: Region[] } {
 
     // Parse shapes - each shape is a 3x3 grid, separated by blank lines
     const shapeBlocks = shapeLines.split(/\n\n/).filter(b => b.trim());
-    const baseShapes: Shape[] = [];
+    const shapes: Shape[] = [];
     
     for (const block of shapeBlocks) {
         const lines = block.trim().split('\n');
@@ -1374,11 +1374,8 @@ function day_12_parser(data: string): { shapes: Shape[][], regions: Region[] } {
                 }
             }
         }
-        baseShapes.push({ coords });
+        shapes.push({ coords });
     }
-
-    // Generate all unique orientations for each shape
-    const shapes: Shape[][] = baseShapes.map(shape => day_12_getUniqueOrientations(shape));
 
     // Parse regions
     const regions: Region[] = regionLines.filter(line => line.trim()).map(line => {
@@ -1399,7 +1396,7 @@ function day_12_1(data: string): number {
     for (const region of regions) {
         let totalShapeArea = 0;
         for (let i = 0; i < region.counts.length; i++) {
-            const shapeArea = shapes[i][0].coords.length; // All orientations have same area
+            const shapeArea = shapes[i].coords.length; // All orientations have same area
             totalShapeArea += shapeArea * region.counts[i];
         }
         if (totalShapeArea < region.width * region.height) {
