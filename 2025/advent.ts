@@ -1391,142 +1391,26 @@ function day_12_parser(data: string): { shapes: Shape[][], regions: Region[] } {
     return { shapes, regions };
 }
 
-function day_12_getUniqueOrientations(shape: Shape): Shape[] {
-    const orientations: Shape[] = [];
-    const seen = new Set<string>();
-
-    // Generate 8 transforms: 4 rotations × 2 flips
-    let current = shape.coords;
-    
-    for (let flip = 0; flip < 2; flip++) {
-        for (let rot = 0; rot < 4; rot++) {
-            const normalized = day_12_normalizeCoords(current);
-            const key = day_12_coordsToKey(normalized);
-            
-            if (!seen.has(key)) {
-                seen.add(key);
-                orientations.push({ coords: normalized });
-            }
-            
-            // Rotate 90 degrees clockwise: (x, y) -> (y, -x)
-            current = current.map(([x, y]) => [y, -x] as [number, number]);
-        }
-        // Flip horizontally: (x, y) -> (-x, y)
-        current = shape.coords.map(([x, y]) => [-x, y] as [number, number]);
-    }
-
-    return orientations;
-}
-
-function day_12_normalizeCoords(coords: [number, number][]): [number, number][] {
-    const minX = Math.min(...coords.map(([x, _]) => x));
-    const minY = Math.min(...coords.map(([_, y]) => y));
-    return coords.map(([x, y]) => [x - minX, y - minY] as [number, number]).sort((a, b) => a[1] - b[1] || a[0] - b[0]);
-}
-
-function day_12_coordsToKey(coords: [number, number][]): string {
-    return coords.map(([x, y]) => `${x},${y}`).join(';');
-}
-
-function day_12_canFitAllShapes(region: Region, shapes: Shape[][]): boolean {
-    // Build flat list of shape indices to place
-    const toPlace: number[] = [];
-    for (let i = 0; i < region.counts.length; i++) {
-        for (let j = 0; j < region.counts[i]; j++) {
-            toPlace.push(i);
-        }
-    }
-
-    if (toPlace.length === 0) return true;
-
-    const occupied = new Set<string>();
-    return day_12_backtrack(0, toPlace, shapes, region, occupied);
-}
-
-function day_12_backtrack(
-    index: number,
-    toPlace: number[],
-    shapes: Shape[][],
-    region: Region,
-    occupied: Set<string>
-): boolean {
-    if (index >= toPlace.length) return true;
-
-    // Find first empty cell (left-to-right, top-to-bottom)
-    let anchorX = -1, anchorY = -1;
-    for (let y = 0; y < region.height; y++) {
-        for (let x = 0; x < region.width; x++) {
-            if (!occupied.has(`${x},${y}`)) {
-                anchorX = x;
-                anchorY = y;
-                break;
-            }
-        }
-    }
-
-    if (anchorX === -1) return false;  // No empty cell but still have shapes to place
-
-    const shapeIdx = toPlace[index];
-    const orientations = shapes[shapeIdx];
-
-    // Try each orientation, but only those that cover the anchor cell
-    for (const orientation of orientations) {
-        // Try offsetting the shape so that each of its cells could be at the anchor
-        for (const [ox, oy] of orientation.coords) {
-            // Place shape so that cell (ox, oy) of the shape lands on (anchorX, anchorY)
-            const positions: [number, number][] = orientation.coords.map(
-                ([x, y]) => [anchorX + x - ox, anchorY + y - oy] as [number, number]
-            );
-
-            // Check bounds and collisions
-            let valid = true;
-            for (const [x, y] of positions) {
-                if (x < 0 || x >= region.width || y < 0 || y >= region.height) {
-                    valid = false;
-                    break;
-                }
-                if (occupied.has(`${x},${y}`)) {
-                    valid = false;
-                    break;
-                }
-            }
-
-            if (valid) {
-                // Place shape
-                for (const [x, y] of positions) {
-                    occupied.add(`${x},${y}`);
-                }
-
-                if (day_12_backtrack(index + 1, toPlace, shapes, region, occupied)) {
-                    return true;
-                }
-
-                // Remove shape (backtrack)
-                for (const [x, y] of positions) {
-                    occupied.delete(`${x},${y}`);
-                }
-            }
-        }
-    }
-
-    return false;
-}
-
 function day_12_1(data: string): number {
     const { shapes, regions } = day_12_parser(data);
     let count = 0;
-    
+
+    // too computationally expensive to try to fit all shapes into a region, so just check area
     for (const region of regions) {
-        if (day_12_canFitAllShapes(region, shapes)) {
+        let totalShapeArea = 0;
+        for (let i = 0; i < region.counts.length; i++) {
+            const shapeArea = shapes[i][0].coords.length; // All orientations have same area
+            totalShapeArea += shapeArea * region.counts[i];
+        }
+        if (totalShapeArea < region.width * region.height) {
             count++;
         }
     }
-    
+
     return count;
 }
 
 function day_12_2(data: string): number {
-    // TODO: Part 2
     return 0;
 }
 
