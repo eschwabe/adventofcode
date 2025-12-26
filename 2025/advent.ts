@@ -1337,6 +1337,200 @@ function day_11_2(data: string): number {
 }
 
 
+// Day 12: Present Packing - 2D Bin Packing
+interface Shape {
+    coords: [number, number][];  // List of (x, y) coordinates relative to top-left
+}
+
+interface Region {
+    width: number;
+    height: number;
+    counts: number[];  // Count of each shape (indices 0-5) needed
+}
+
+function day_12_parser(data: string): { shapes: Shape[][], regions: Region[] } {
+    const lines = data.split('\n');
+    
+    // Find where regions start (line matching NxN: pattern)
+    const regionStartIdx = lines.findIndex(line => /^\d+x\d+:/.test(line));
+    
+    const shapeLines = lines.slice(0, regionStartIdx).join('\n');
+    const regionLines = lines.slice(regionStartIdx);
+
+    // Parse shapes - each shape is a 3x3 grid, separated by blank lines
+    const shapeBlocks = shapeLines.split(/\n\n/).filter(b => b.trim());
+    const baseShapes: Shape[] = [];
+    
+    for (const block of shapeBlocks) {
+        const lines = block.trim().split('\n');
+        // Skip the index line (e.g., "0:")
+        const grid = lines.slice(1);
+        const coords: [number, number][] = [];
+        
+        for (let y = 0; y < grid.length; y++) {
+            for (let x = 0; x < grid[y].length; x++) {
+                if (grid[y][x] === '#') {
+                    coords.push([x, y]);
+                }
+            }
+        }
+        baseShapes.push({ coords });
+    }
+
+    // Generate all unique orientations for each shape
+    const shapes: Shape[][] = baseShapes.map(shape => day_12_getUniqueOrientations(shape));
+
+    // Parse regions
+    const regions: Region[] = regionLines.filter(line => line.trim()).map(line => {
+        const [dims, countsStr] = line.split(': ');
+        const [width, height] = dims.split('x').map(n => parseInt(n));
+        const counts = countsStr.split(' ').map(n => parseInt(n));
+        return { width, height, counts };
+    });
+
+    return { shapes, regions };
+}
+
+function day_12_getUniqueOrientations(shape: Shape): Shape[] {
+    const orientations: Shape[] = [];
+    const seen = new Set<string>();
+
+    // Generate 8 transforms: 4 rotations × 2 flips
+    let current = shape.coords;
+    
+    for (let flip = 0; flip < 2; flip++) {
+        for (let rot = 0; rot < 4; rot++) {
+            const normalized = day_12_normalizeCoords(current);
+            const key = day_12_coordsToKey(normalized);
+            
+            if (!seen.has(key)) {
+                seen.add(key);
+                orientations.push({ coords: normalized });
+            }
+            
+            // Rotate 90 degrees clockwise: (x, y) -> (y, -x)
+            current = current.map(([x, y]) => [y, -x] as [number, number]);
+        }
+        // Flip horizontally: (x, y) -> (-x, y)
+        current = shape.coords.map(([x, y]) => [-x, y] as [number, number]);
+    }
+
+    return orientations;
+}
+
+function day_12_normalizeCoords(coords: [number, number][]): [number, number][] {
+    const minX = Math.min(...coords.map(([x, _]) => x));
+    const minY = Math.min(...coords.map(([_, y]) => y));
+    return coords.map(([x, y]) => [x - minX, y - minY] as [number, number]).sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+}
+
+function day_12_coordsToKey(coords: [number, number][]): string {
+    return coords.map(([x, y]) => `${x},${y}`).join(';');
+}
+
+function day_12_canFitAllShapes(region: Region, shapes: Shape[][]): boolean {
+    // Build flat list of shape indices to place
+    const toPlace: number[] = [];
+    for (let i = 0; i < region.counts.length; i++) {
+        for (let j = 0; j < region.counts[i]; j++) {
+            toPlace.push(i);
+        }
+    }
+
+    if (toPlace.length === 0) return true;
+
+    const occupied = new Set<string>();
+    return day_12_backtrack(0, toPlace, shapes, region, occupied);
+}
+
+function day_12_backtrack(
+    index: number,
+    toPlace: number[],
+    shapes: Shape[][],
+    region: Region,
+    occupied: Set<string>
+): boolean {
+    if (index >= toPlace.length) return true;
+
+    // Find first empty cell (left-to-right, top-to-bottom)
+    let anchorX = -1, anchorY = -1;
+    for (let y = 0; y < region.height; y++) {
+        for (let x = 0; x < region.width; x++) {
+            if (!occupied.has(`${x},${y}`)) {
+                anchorX = x;
+                anchorY = y;
+                break;
+            }
+        }
+    }
+
+    if (anchorX === -1) return false;  // No empty cell but still have shapes to place
+
+    const shapeIdx = toPlace[index];
+    const orientations = shapes[shapeIdx];
+
+    // Try each orientation, but only those that cover the anchor cell
+    for (const orientation of orientations) {
+        // Try offsetting the shape so that each of its cells could be at the anchor
+        for (const [ox, oy] of orientation.coords) {
+            // Place shape so that cell (ox, oy) of the shape lands on (anchorX, anchorY)
+            const positions: [number, number][] = orientation.coords.map(
+                ([x, y]) => [anchorX + x - ox, anchorY + y - oy] as [number, number]
+            );
+
+            // Check bounds and collisions
+            let valid = true;
+            for (const [x, y] of positions) {
+                if (x < 0 || x >= region.width || y < 0 || y >= region.height) {
+                    valid = false;
+                    break;
+                }
+                if (occupied.has(`${x},${y}`)) {
+                    valid = false;
+                    break;
+                }
+            }
+
+            if (valid) {
+                // Place shape
+                for (const [x, y] of positions) {
+                    occupied.add(`${x},${y}`);
+                }
+
+                if (day_12_backtrack(index + 1, toPlace, shapes, region, occupied)) {
+                    return true;
+                }
+
+                // Remove shape (backtrack)
+                for (const [x, y] of positions) {
+                    occupied.delete(`${x},${y}`);
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+function day_12_1(data: string): number {
+    const { shapes, regions } = day_12_parser(data);
+    let count = 0;
+    
+    for (const region of regions) {
+        if (day_12_canFitAllShapes(region, shapes)) {
+            count++;
+        }
+    }
+    
+    return count;
+}
+
+function day_12_2(data: string): number {
+    // TODO: Part 2
+    return 0;
+}
+
+
 // Main runner
 const args = process.argv.slice(2);
 if (args.length < 2) {
@@ -1385,6 +1579,9 @@ try {
             break;
         case 11:
             result = part === 1 ? day_11_1(data) : day_11_2(data);
+            break;
+        case 12:
+            result = part === 1 ? day_12_1(data) : day_12_2(data);
             break;
         // Add more days here as needed
         default:
